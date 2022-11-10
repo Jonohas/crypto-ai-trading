@@ -1,0 +1,2 @@
+- create docker file for compilation and running of the Preprocessing
+- Fix make build to include ta-lib
