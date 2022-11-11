@@ -2,13 +2,12 @@
 CC = gcc
 # create CFLAGS variable
 
-INCLUDES = -I/usr/local/lib -I/usr/local/include
 CFLAGS =  -Wall -g $(INCLUDES)
 
-LDFLAGS = -L/usr/local/lib -L/usr/local/include
+LDLIBS = -lta_lib -lm
 
 output: main.o
-	$(CC) $(LDFLAGS) -o output main.o
+	$(CC) $(LDLIBS) -o output main.o
 
 main.o: main.c
 	$(CC) $(CFLAGS) -c main.c

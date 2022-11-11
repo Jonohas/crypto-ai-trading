@@ -54,11 +54,11 @@ struct indicator_selection {
 
 struct candle {
     long time;
-    float open;
-    float close;
-    float high;
-    float low;
-    float volume;
+    double open;
+    double close;
+    double high;
+    double low;
+    double volume;
 };
 
 
@@ -175,8 +175,8 @@ void *prepocess(void* args) {
         else 
         {
             struct candle *c = (struct candle *)&candles[count - 1];
-            sscanf(str, "%ld,%f,%f,%f,%f,%f", &c->time, &c->open, &c->close, &c->high, &c->low, &c->volume);
-            fprintf(wfp, "%ld,%f,%f,%f,%f,%f\n", c->time, c->open, c->close, c->high, c->low, c->volume);
+            sscanf(str, "%ld,%lf,%lf,%lf,%lf,%lf", &c->time, &c->open, &c->close, &c->high, &c->low, &c->volume);
+            fprintf(wfp, "%ld,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf\n", c->time, c->open, c->close, c->high, c->low, c->volume);
         }
         count++;
     }
