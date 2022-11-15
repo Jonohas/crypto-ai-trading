@@ -2,18 +2,12 @@
 CC = gcc
 # create CFLAGS variable
 
-CFLAGS =  -Wall -g $(INCLUDES)
-
+CFLAGS = -I/usr/local/include -Wall -g
+LDFLAGS = -L/usr/local/lib
 LDLIBS = -lta_lib -lm
 
-output: main.o
-	$(CC) $(LDLIBS) -o output main.o
-
-main.o: main.c
-	$(CC) $(CFLAGS) -c main.c
-
-# target: dependencies
-# 		action
+output: main.c
+	$(CC) $(LDFLAGS) $(CFLAGS) -o output main.c $(LDLIBS)
 
 clean:
 	rm -f *.o output
