@@ -20,13 +20,13 @@ struct indicators {
     
 };
 
-struct modified_candle {
-    long *time;
-    float *open;
-    float *close;
-    float *high;
-    float *low;
-    float *volume;
+struct candle {
+    long time;
+    double open;
+    double close;
+    double high;
+    double low;
+    double volume;
 
     double adosc;
     double atr;
@@ -52,52 +52,32 @@ struct indicator_selection {
     bool tema;
 };
 
-struct candle {
-    long time;
-    double open;
-    double close;
-    double high;
-    double low;
-    double volume;
-};
-
-
 struct indicator_thread {
     char *input_file;
     char *output_file;
 };
 
-void calculate_indicators(struct candle * candles, struct indicator_selection *selection) {
+void calculate_indicators(struct indicator_selection *selection, struct candle *candles, char * output_file[]) {
     // adsoc, atr, bb_upper, bb_middel, bb_lower, macd, mfi, rsi, sar, tema
     
-    double *temp_open = malloc(sizeof(float) * CSV_LENGTH);
-    double *temp_high = malloc(sizeof(float) * CSV_LENGTH);
-    double *temp_low = malloc(sizeof(float) * CSV_LENGTH);
-    double *temp_close = malloc(sizeof(float) * CSV_LENGTH);
-    double *temp_volume = malloc(sizeof(float) * CSV_LENGTH);
+    double *temp_open = malloc(sizeof(double) * CSV_LENGTH);
+    double *temp_high = malloc(sizeof(double) * CSV_LENGTH);
+    double *temp_low = malloc(sizeof(double) * CSV_LENGTH);
+    double *temp_close = malloc(sizeof(double) * CSV_LENGTH);
+    double *temp_volume = malloc(sizeof(double) * CSV_LENGTH);
 
-    struct modified_candle *modified_candles = calloc(CSV_LENGTH, sizeof(struct modified_candle));
-
-    for (int i = 0; i < CSV_LENGTH; i++)
+    for (int i = 0; i < CSV_LENGTH - 1 ; i++)
     {
-        struct candle * candle = &candles[i];
-        struct modified_candle *modified_candle = &modified_candles[i];
-
-        modified_candle->time = &candle->time;
-        modified_candle->open = &candle->open;
-        modified_candle->close = &candle->close;
-        modified_candle->high = &candle->high;
-        modified_candle->low = &candle->low;
-        modified_candle->volume = &candle->volume;
+        struct candle *candle = &candles[i];
 
         temp_open[i] = candle->open;
         temp_high[i] = candle->high;
         temp_low[i] = candle->low;
         temp_close[i] = candle->close;
         temp_volume[i] = candle->volume;
-
-
     }
+
+    // free(candles);
 
     double *tmp_adosc = malloc(sizeof(double) * CSV_LENGTH);
     int beginIdx, endIdx;
@@ -105,21 +85,41 @@ void calculate_indicators(struct candle * candles, struct indicator_selection *s
     if (selection->adosc)
     {
         // TA_RetCode retCode = TA_ADOSC(0, CSV_LENGTH - 1, temp_high, temp_low, temp_close, temp_volume, 3, 10, &beginIdx, &endIdx, tmp_adosc);
-
         TA_ADOSC(0, CSV_LENGTH - 1, temp_high, temp_low, temp_close, temp_volume, 3, 10, &beginIdx, &endIdx, tmp_adosc);
     }
 
+
+    // Assign the calculated values to the candles
     for (int i = 0; i < CSV_LENGTH; i++)
     {
-        struct modified_candle *modified_candle = &modified_candles[i];
-
-
-        modified_candle->adosc = tmp_adosc[i];
-
-
+        struct candle *candle = &candles[i];
+        candle->adosc = tmp_adosc[i];
     }
+
+
     
-    free(tmp_adosc);
+    FILE *wfp = fopen(output_file, "a");
+    for (int i = 0; i < CSV_LENGTH - 1 ; i++) {
+        if (i ==0)
+            fprintf(wfp, "%s,%s,%s,%s,%s,%s,%s\n", "event_time","open","close","high","low","volume","adosc");
+        else {
+            struct candle *candle = &candles[i];
+
+            fprintf(wfp, "%ld,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf\n", 
+                candle->time, 
+                candle->open, 
+                candle->close, 
+                candle->high, 
+                candle->low, 
+                candle->volume, 
+                candle->adosc
+            );
+        }
+    }
+
+    fclose(wfp);
+    
+    // free(tmp_adosc);
     // if (selection->atr)
     //     printf("atr");
 
@@ -153,7 +153,6 @@ void *prepocess(void* args) {
     char str[MAX_LINE_LENGTH];
     int result;
     FILE *fp = fopen(filename_qfd, "r");
-    FILE *wfp = fopen(output_file, "a");
 
     struct candle *candles;
 
@@ -170,14 +169,8 @@ void *prepocess(void* args) {
     int count = 0;
     while (fgets(str, MAX_LINE_LENGTH, fp)) 
     {
-        if (count == 0)
-            fprintf(wfp, "%s,%s,%s,%s,%s,%s\n", "event_time","open","close","high","low","volume");
-        else 
-        {
-            struct candle *c = (struct candle *)&candles[count - 1];
-            sscanf(str, "%ld,%lf,%lf,%lf,%lf,%lf", &c->time, &c->open, &c->close, &c->high, &c->low, &c->volume);
-            fprintf(wfp, "%ld,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf\n", c->time, c->open, c->close, c->high, c->low, c->volume);
-        }
+        struct candle *c = (struct candle *)&candles[count - 1];
+        sscanf(str, "%ld,%lf,%lf,%lf,%lf,%lf", &c->time, &c->open, &c->close, &c->high, &c->low, &c->volume);
         count++;
     }
 
@@ -192,7 +185,7 @@ void *prepocess(void* args) {
     selection.sar = true;
     selection.tema = true;
 
-    // calculate_indicators(candles, &selection);
+    calculate_indicators(&selection, candles, output_file);
 
     fclose(fp);
     free(candles);
