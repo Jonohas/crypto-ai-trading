@@ -30,10 +30,15 @@ struct candle {
 
     double adosc;
     double atr;
+
     double bb_upper;
     double bb_middle;
     double bb_lower;
+
     double macd;
+    double macd_signal;
+    double macd_hist;
+
     double mfi;
     double rsi;
     double sar;
@@ -55,6 +60,10 @@ struct indicator_selection {
 struct indicator_thread {
     char *input_file;
     char *output_file;
+};
+
+double normalize(double a1, double a2) {
+    return a1 == 0 ? a1 : (a2 - a1) / a1;
 };
 
 void calculate_indicators(struct indicator_selection *selection, struct candle *candles, char * output_file[]) {
@@ -80,66 +89,178 @@ void calculate_indicators(struct indicator_selection *selection, struct candle *
     // free(candles);
 
     double *tmp_adosc = malloc(sizeof(double) * CSV_LENGTH);
+    double *tmp_atr = malloc(sizeof(double) * CSV_LENGTH);
+
+    double *tmp_bb_upper = malloc(sizeof(double) * CSV_LENGTH);
+    double *tmp_bb_middle = malloc(sizeof(double) * CSV_LENGTH);
+    double *tmp_bb_lower = malloc(sizeof(double) * CSV_LENGTH);
+
+    double *tmp_macd = malloc(sizeof(double) * CSV_LENGTH);
+    double *tmp_macd_signal = malloc(sizeof(double) * CSV_LENGTH);
+    double *tmp_macd_hist = malloc(sizeof(double) * CSV_LENGTH);
+
+    double *tmp_mfi = malloc(sizeof(double) * CSV_LENGTH);
+    double *tmp_rsi = malloc(sizeof(double) * CSV_LENGTH);
+    double *tmp_sar = malloc(sizeof(double) * CSV_LENGTH);
+    double *tmp_tema = malloc(sizeof(double) * CSV_LENGTH);
+
+
     int beginIdx, endIdx;
 
     if (selection->adosc)
-    {
-        // TA_RetCode retCode = TA_ADOSC(0, CSV_LENGTH - 1, temp_high, temp_low, temp_close, temp_volume, 3, 10, &beginIdx, &endIdx, tmp_adosc);
         TA_ADOSC(0, CSV_LENGTH - 1, temp_high, temp_low, temp_close, temp_volume, 3, 10, &beginIdx, &endIdx, tmp_adosc);
-    }
+
+    if (selection->atr)
+        TA_ATR(0, CSV_LENGTH - 1, temp_high, temp_low, temp_close, 14, &beginIdx, &endIdx, tmp_atr);
+
+    if (selection->bb)
+        TA_BBANDS(0, CSV_LENGTH - 1, temp_close, 20, 2, 2, TA_MAType_SMA, &beginIdx, &endIdx, tmp_bb_upper, tmp_bb_middle, tmp_bb_lower);
+
+    if (selection->macd)
+        TA_MACD(0, CSV_LENGTH - 1, temp_close, 12, 26, 9, &beginIdx, &endIdx, tmp_macd, tmp_macd_signal, tmp_macd_hist);
+
+    if (selection->mfi)
+        TA_MFI(0, CSV_LENGTH - 1, temp_high, temp_low, temp_close, temp_volume, 14, &beginIdx, &endIdx, tmp_mfi);
+    
+    if (selection->rsi)
+        TA_RSI(0, CSV_LENGTH - 1, temp_close, 14, &beginIdx, &endIdx, tmp_rsi);
+
+    if (selection->sar)
+        TA_SAR(0, CSV_LENGTH - 1, temp_high, temp_low, 0.02, 0.2, &beginIdx, &endIdx, tmp_sar);
+
+    if (selection->tema)
+        TA_TEMA(0, CSV_LENGTH - 1, temp_close, 30, &beginIdx, &endIdx, tmp_tema);
+
 
 
     // Assign the calculated values to the candles
     for (int i = 0; i < CSV_LENGTH; i++)
     {
         struct candle *candle = &candles[i];
-        candle->adosc = tmp_adosc[i];
+
+        if (selection->adosc)
+            candle->adosc = tmp_adosc[i];
+
+        if (selection->atr)
+            candle->atr = tmp_atr[i];
+
+        if (selection->bb)
+        {
+            candle->bb_upper = tmp_bb_upper[i];
+            candle->bb_middle = tmp_bb_middle[i];
+            candle->bb_lower = tmp_bb_lower[i];
+        }
+
+        if (selection->macd)
+        {
+            candle->macd = tmp_macd[i];
+            candle->macd_signal = tmp_macd_signal[i];
+            candle->macd_hist = tmp_macd_hist[i];
+        }
+
+        if (selection->mfi)
+            candle->mfi = tmp_mfi[i];
+        
+        if (selection->rsi)
+            candle->rsi = tmp_rsi[i];
+
+        if (selection->sar)
+            candle->sar = tmp_sar[i];
+
+        if (selection->tema)
+            candle->tema = tmp_tema[i];
     }
 
+    free(temp_open);
+    free(temp_high);
+    free(temp_low);
+    free(temp_close);
+    free(temp_volume);
 
-    
+
+
+    struct candle *new_candles;
+
+
+    // length of allocation is one year in minutes (minute candles)
+    new_candles = calloc(CSV_LENGTH, sizeof(struct candle));
+
     FILE *wfp = fopen(output_file, "a");
-    for (int i = 0; i < CSV_LENGTH - 1 ; i++) {
-        if (i ==0)
-            fprintf(wfp, "%s,%s,%s,%s,%s,%s,%s\n", "event_time","open","close","high","low","volume","adosc");
+    for (size_t i = 0; i < CSV_LENGTH - 1 ; i++) {
+        if (i == 0)
+            fprintf(wfp, "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n", "event_time","open","close","high","low","volume","adosc", "atr", "bb_upper", "bb_middle", "bb_lower", "macd", "macd_signal", "macd_hist", "mfi", "rsi", "sar", "tema");
         else {
             struct candle *candle = &candles[i];
+            struct candle *new_candle = &new_candles[i];
 
-            fprintf(wfp, "%ld,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf\n", 
-                candle->time, 
-                candle->open, 
-                candle->close, 
-                candle->high, 
-                candle->low, 
-                candle->volume, 
-                candle->adosc
+            new_candle->time = candle->time;
+
+            if (i > 0) {
+                // Normalize candle
+                new_candle->open = normalize(candle->open, candles[i - 1].close);
+                new_candle->close = normalize(candle->close, candles[i - 1].close);
+                new_candle->high = normalize(candle->high, candles[i - 1].close);
+                new_candle->low = normalize(candle->low, candles[i - 1].close);
+                new_candle->volume = normalize(candle->volume, candles[i - 1].volume);
+
+                new_candle->adosc = normalize(candle->adosc, candles[i - 1].adosc);
+                new_candle->atr = normalize(candle->atr, candles[i - 1].atr);
+
+                new_candle->bb_upper = normalize(candle->bb_upper, candles[i - 1].bb_upper);
+                new_candle->bb_middle = normalize(candle->bb_middle, candles[i - 1].bb_middle);
+                new_candle->bb_lower = normalize(candle->bb_lower, candles[i - 1].bb_lower);
+
+                new_candle->macd = normalize(candle->macd, candles[i - 1].macd);
+                new_candle->macd_signal = normalize(candle->macd_signal, candles[i - 1].macd_signal);
+                new_candle->macd_hist = normalize(candle->macd_hist, candles[i - 1].macd_hist);
+
+                new_candle->mfi /= 100;
+                new_candle->rsi /= 100;
+                new_candle->sar = normalize(candle->sar, candles[i - 1].sar);
+                new_candle->tema = normalize(candle->tema, candles[i - 1].tema);
+
+            }
+
+            fprintf(wfp, "%ld,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf\n", 
+                new_candle->time, 
+                new_candle->open, 
+                new_candle->close, 
+                new_candle->high, 
+                new_candle->low, 
+                new_candle->volume, 
+                new_candle->adosc,
+                new_candle->atr,
+                new_candle->bb_upper,
+                new_candle->bb_middle,
+                new_candle->bb_lower,
+                new_candle->macd,
+                new_candle->macd_signal,
+                new_candle->macd_hist,
+                new_candle->mfi,
+                new_candle->rsi,
+                new_candle->sar,
+                new_candle->tema
             );
+
+
         }
     }
 
     fclose(wfp);
-    
-    // free(tmp_adosc);
-    // if (selection->atr)
-    //     printf("atr");
 
-    // if (selection->bb)
-    //     printf("bb");
+    free(tmp_adosc);
+    free(tmp_atr);
+    free(tmp_bb_upper);
+    free(tmp_bb_middle);
+    free(tmp_bb_lower);
+    free(tmp_macd);
+    free(tmp_macd_signal);
+    free(tmp_macd_hist);
+    free(tmp_mfi);
+    free(tmp_rsi);
+    free(tmp_sar);
+    free(tmp_tema);
 
-    // if (selection->macd)
-    //     printf("macd");
-
-    // if (selection->mfi)
-    //     printf("mfi");
-
-    // if (selection->rsi)
-    //     printf("rsi");
-
-    // if (selection->sar)
-    //     printf("sar");
-
-    // if (selection->tema)    
-    //     printf("tema");
 };
 
 void *prepocess(void* args) {
