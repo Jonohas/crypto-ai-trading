@@ -296,10 +296,21 @@ void *prepocess(void* args) {
 
     struct indicator_selection selection;
 
-    selection.adosc = true;
+    // Chaikin Oscillator - Momentum indicator
+    selection.adosc = true; // Above 0 net buying pressure, below 0 net selling pressure
+
+
+    // High volatility are considered as high risk,yet we love volatility, it can create fear, and puts great assets on sale
+    // Averate True Range - Volatility (strength of price action) indicator
     selection.atr = true;
-    selection.bb = true;
+
+    // Bollinger Bands - Volatility indicator
+    selection.bb = true; // How close the upper and lower band are at any given time illustrates the degree of volatility the price is experiencing.
+    
+    // Moving Average Convergence Divergence - Momentum indicator
     selection.macd = true;
+
+    // Money Flow Index - Volume indicator
     selection.mfi = true;
     selection.rsi = true;
     selection.sar = true;
