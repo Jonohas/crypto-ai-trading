@@ -1,0 +1,7 @@
+version: "3.9"
+services:
+  preprocessor:
+    build: .
+    volumes:
+      - ../Data:/Data
+    command: ./output /Data/raw/ /Data/dataset/

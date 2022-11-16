@@ -1,0 +1,8 @@
+version: "3.9"
+services:
+  preprocessor:
+    build: ./Preprocessing/
+    container_name: crypto-ai_preprocessor
+    volumes:
+      - ./Data:/Data
+    command: ./output /Data/raw/ /Data/dataset/

@@ -265,7 +265,6 @@ void calculate_indicators(struct indicator_selection *selection, struct candle *
 
 void *prepocess(void* args) {
     struct indicator_thread *thread_args = args;
-    printf("%s\n", thread_args->input_file);
 
     char *filename_qfd = thread_args->input_file;
 
@@ -359,7 +358,6 @@ int main(int argc, char** argv)   // define the main function
     char filename_qfd[300] ;
     char new_name_qfd[300] ;
 
-    printf("Number of files: %d\n", num_files);
     pthread_t threads[num_files];
 
     int i = 0;
