@@ -185,3 +185,16 @@ if __name__ == "__main__":
     writer2.start()
     writer3.start()
     writer4.start()
+
+    requester0.join()
+    requester1.join()
+    requester2.join()
+    requester3.join()
+    requester4.join()
+
+    writer0.join()
+    writer1.join()
+    writer2.join()
+    writer3.join()
+    writer4.join()
+    
