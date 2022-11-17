@@ -1,4 +1,5 @@
-from CryptoEnvironment import CryptoEnvironment,ActionSpace, CryptoAgent
+from CryptoEnvironment import CryptoEnvironment, ActionSpace
+from CryptoAgent import CryptoAgent
 import pandas as pd
 import random
 import numpy as np
@@ -7,7 +8,7 @@ import numpy as np
 
 
 def main():
-    df = pd.read_csv('Data/dataset/VETEUR.csv')
+    df = pd.read_csv('../Data/dataset/VETEUR.csv')
 
     INPUT_SAMPLE_COUNT = 10
     LOOKBACK_WINDOW = 10
