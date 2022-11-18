@@ -1,12 +1,30 @@
-from CryptoEnv_00 import CryptoEnvironment
+from CryptoEnv_01 import CryptoEnvironment
 import pandas as pd
 
 LOOKBACK_WINDOW = 10
 
 def main():
-    df = pd.read_csv('Data/dataset/VETEUR.csv')
-
+    df = pd.read_csv('../Data/dataset/VETEUR.csv')
+    feature_count = len(df.columns)
     print(df.head(15))
+
+    env = CryptoEnvironment(df, input_shape=(LOOKBACK_WINDOW, feature_count), lookback_window=LOOKBACK_WINDOW)
+
+    state = env.reset()
+    done = False
+
+    for i in range(10):
+        episode_reward = 0
+
+        while not done:
+            action = env.action_space.sample()
+            next_state, reward, done, _ = env.step(action)
+            episode_reward += reward
+
+        done = False
+
+        print(f"Episode {i}: {episode_reward}")
+
 
     # # remove time from data
     # df = df.drop(columns=['event_time'])
