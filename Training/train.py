@@ -1,4 +1,4 @@
-from CryptoEnvironment import CryptoEnvironment, ActionSpace
+from Training.CryptoEnv_00 import CryptoEnvironment, ActionSpace
 from CryptoAgent import CryptoAgent
 import pandas as pd
 import random

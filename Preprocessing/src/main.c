@@ -63,7 +63,11 @@ struct indicator_thread {
 };
 
 double normalize(double a1, double a2) {
-    return a1 == 0 ? a1 : (a2 - a1) / a1;
+    if (a1 == 0) {
+        return 0;
+    } else {
+        return (a2 - a1) / a1;
+    }
 };
 
 void calculate_indicators(struct indicator_selection *selection, struct candle *candles, char * output_file[]) {
@@ -197,10 +201,10 @@ void calculate_indicators(struct indicator_selection *selection, struct candle *
 
             if (i > 0) {
                 // Normalize candle
-                new_candle->open = normalize(candle->open, candles[i - 1].close);
+                new_candle->open = normalize(candle->open, candles[i - 1].open);
                 new_candle->close = normalize(candle->close, candles[i - 1].close);
-                new_candle->high = normalize(candle->high, candles[i - 1].close);
-                new_candle->low = normalize(candle->low, candles[i - 1].close);
+                new_candle->high = normalize(candle->high, candles[i - 1].high);
+                new_candle->low = normalize(candle->low, candles[i - 1].low);
                 new_candle->volume = normalize(candle->volume, candles[i - 1].volume);
 
                 new_candle->adosc = normalize(candle->adosc, candles[i - 1].adosc);
@@ -216,6 +220,7 @@ void calculate_indicators(struct indicator_selection *selection, struct candle *
 
                 new_candle->mfi /= 100;
                 new_candle->rsi /= 100;
+
                 new_candle->sar = normalize(candle->sar, candles[i - 1].sar);
                 new_candle->tema = normalize(candle->tema, candles[i - 1].tema);
 
