@@ -36,11 +36,11 @@ class CryptoAgent():
 
     def build_model(self):
         model = keras.Sequential()
-        model.add(layers.Dense(32, input_shape=self.input_shape, activation='relu'))
+        model.add(layers.LSTM(32, input_shape=self.input_shape, activation='relu'))
         model.add(layers.Dropout(0.1))
-        model.add(layers.Dense(64, activation='relu'))
+        model.add(layers.LSTM(64, activation='relu'))
         model.add(layers.BatchNormalization())
-        model.add(layers.Dense(3, activation='linear'))
+        model.add(layers.LSTM(3, activation='linear'))
 
         model.compile(optimizer='adam', loss='mse', metrics=['mae', 'accuracy'])
         return model
