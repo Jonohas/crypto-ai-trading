@@ -193,38 +193,38 @@ void calculate_indicators(struct indicator_selection *selection, struct candle *
     for (size_t i = 0; i < CSV_LENGTH - 1 ; i++) {
         if (i == 0)
             fprintf(wfp, "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n", "event_time","open","close","high","low","volume","adosc", "atr", "bb_upper", "bb_middle", "bb_lower", "macd", "macd_signal", "macd_hist", "mfi", "rsi", "sar", "tema");
-        else {
+        else if (i > 2) {
             struct candle *candle = &candles[i];
             struct candle *new_candle = &new_candles[i];
 
+            struct candle *candle_prev = &candles[i - 1];
+
             new_candle->time = candle->time;
 
-            if (i > 0) {
-                // Normalize candle
-                new_candle->open = normalize(candle->open, candles[i - 1].open);
-                new_candle->close = normalize(candle->close, candles[i - 1].close);
-                new_candle->high = normalize(candle->high, candles[i - 1].high);
-                new_candle->low = normalize(candle->low, candles[i - 1].low);
-                new_candle->volume = normalize(candle->volume, candles[i - 1].volume);
+            // Normalize candle
+            new_candle->open = normalize(candle_prev->open, candle->open);
+            new_candle->close = normalize(candle_prev->close, candle->close);
+            new_candle->high = normalize(candle_prev->high, candle->high);
+            new_candle->low = normalize(candle_prev->low, candle->low);
+            new_candle->volume = normalize(candle_prev->volume, candle->volume);
 
-                new_candle->adosc = normalize(candle->adosc, candles[i - 1].adosc);
-                new_candle->atr = normalize(candle->atr, candles[i - 1].atr);
+            new_candle->adosc = normalize(candle_prev->adosc, candle->adosc);
+            new_candle->atr = normalize(candle_prev->atr, candle->atr);
 
-                new_candle->bb_upper = normalize(candle->bb_upper, candles[i - 1].bb_upper);
-                new_candle->bb_middle = normalize(candle->bb_middle, candles[i - 1].bb_middle);
-                new_candle->bb_lower = normalize(candle->bb_lower, candles[i - 1].bb_lower);
+            new_candle->bb_upper = normalize(candle_prev->bb_upper, candle->bb_upper);
+            new_candle->bb_middle = normalize(candle_prev->bb_middle, candle->bb_middle);
+            new_candle->bb_lower = normalize(candle_prev->bb_lower, candle->bb_lower);
 
-                new_candle->macd = normalize(candle->macd, candles[i - 1].macd);
-                new_candle->macd_signal = normalize(candle->macd_signal, candles[i - 1].macd_signal);
-                new_candle->macd_hist = normalize(candle->macd_hist, candles[i - 1].macd_hist);
+            new_candle->macd = normalize(candle_prev->macd, candle->macd);
+            new_candle->macd_signal = normalize(candle_prev->macd_signal, candle->macd_signal);
+            new_candle->macd_hist = normalize(candle_prev->macd_hist, candle->macd_hist);
 
-                new_candle->mfi /= 100;
-                new_candle->rsi /= 100;
+            new_candle->mfi /= 100;
+            new_candle->rsi /= 100;
 
-                new_candle->sar = normalize(candle->sar, candles[i - 1].sar);
-                new_candle->tema = normalize(candle->tema, candles[i - 1].tema);
+            new_candle->sar = normalize(candle_prev->sar, candle->sar);
+            new_candle->tema = normalize(candle_prev->tema, candle->tema);
 
-            }
 
             fprintf(wfp, "%ld,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf\n", 
                 new_candle->time, 
@@ -246,8 +246,6 @@ void calculate_indicators(struct indicator_selection *selection, struct candle *
                 new_candle->sar,
                 new_candle->tema
             );
-
-
         }
     }
 

@@ -11,7 +11,7 @@ COPY custom_ld.so.conf /etc/ld.so.conf
 RUN /sbin/ldconfig
 
 
-COPY src/main.c /app/main.c
+COPY main.c /app/main.c
 COPY Makefile /app/Makefile
 
 RUN make
