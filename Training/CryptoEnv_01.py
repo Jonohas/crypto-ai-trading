@@ -3,11 +3,13 @@ from enum import Enum
 from gym import spaces
 import numpy as np
 import collections
+import pandas as pd
 
 from Algorithms.Algorithm1 import Algorithm
 
 
-
+INITIAL_BALANCE = 100
+INITIAL_COUNT_AMCOUNT = 0
 
 class ActionSpace(Enum):
     BUY = 0
@@ -20,10 +22,14 @@ class ActionSpace(Enum):
 
 class CryptoEnvironment(gym.Env):
     metadata = {'render.modes': ['human']}
-    def __init__(self, data, input_shape = (10, 18), lookback_window = 10):
+    def __init__(self, data_location, lookback_window = 10):
         super(CryptoEnvironment, self).__init__()
-        self.data = data
-        self._input_shape = input_shape
+        self.data = pd.read_csv("./Data/dataset/", data_location)
+        self._org_data = pd.read_csv("./Data/raw/", data_location)
+
+        self._feature_count = len(self.data.columns)
+
+        self._input_shape = (lookback_window, self._feature_count)
         self._lookback_window = lookback_window
 
         self._step_count = 0
@@ -42,8 +48,8 @@ class CryptoEnvironment(gym.Env):
         self._total_profit = 0
         self._profit = 0
 
-        self._balance = 100
-        self._coin_amount = 0
+        self._balance = INITIAL_BALANCE
+        self._coin_amount = INITIAL_COUNT_AMCOUNT
 
 
     def _get_state(self, step_count):
@@ -90,6 +96,15 @@ class CryptoEnvironment(gym.Env):
         return self._algorithm.hold_reward()
 
     def reset(self):
+        self._step_count = 0
+        self._state = self._get_state(self._step_count)
+        self._balance = INITIAL_BALANCE
+        self._coin_amount = INITIAL_COUNT_AMCOUNT
+
+        self._profit = 0
+        self._total_profit = 0
+
+        self._previous_buy_sell.clear()
         return self._state
 
     def render(self):
