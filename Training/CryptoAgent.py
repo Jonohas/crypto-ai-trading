@@ -9,7 +9,7 @@ DEFAULT_LOOKBACK_WINDOW = 10
 
 
 class CryptoAgent():
-    def __init__(self, replay_capacity=REPLAY_MEMORY_SIZE, input_shape=(DEFAULT_LOOKBACK_WINDOW, 18)):
+    def __init__(self, replay_capacity=REPLAY_MEMORY_SIZE, input_shape=(DEFAULT_LOOKBACK_WINDOW, 32)):
         self.capacity = replay_capacity
         self.memory = deque(maxlen=replay_capacity)
         self.populated = False
@@ -32,15 +32,12 @@ class CryptoAgent():
     def append_to_replay_memory(self, step):
         # Append an experience to the replay memory
         self.step = step
-        self.replay_memory.append(self.step)
+        self.memory.append(self.step)
 
     def build_model(self):
         model = keras.Sequential()
-        model.add(layers.LSTM(32, input_shape=self.input_shape, activation='relu'))
-        model.add(layers.Dropout(0.1))
-        model.add(layers.LSTM(64, activation='relu'))
-        model.add(layers.BatchNormalization())
-        model.add(layers.LSTM(3, activation='linear'))
+        model.add(layers.LSTM(32, activation='relu', input_shape=self.input_shape))
+        model.add(layers.Dense(3))
 
         model.compile(optimizer='adam', loss='mse', metrics=['mae', 'accuracy'])
         return model
@@ -55,6 +52,3 @@ class CryptoAgent():
 
     def update_network_target(self):
         self.network_target.set_weights(self.model_q.get_weights())
-
-    
-

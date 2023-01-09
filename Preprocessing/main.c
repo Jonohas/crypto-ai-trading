@@ -28,6 +28,12 @@ struct candle {
     double low;
     double volume;
 
+    double original_open;
+    double original_close;
+    double original_high;
+    double original_low;
+    double original_volume;
+
     double adosc;
     double atr;
 
@@ -192,7 +198,7 @@ void calculate_indicators(struct indicator_selection *selection, struct candle *
     FILE *wfp = fopen(output_file, "a");
     for (size_t i = 0; i < CSV_LENGTH - 1 ; i++) {
         if (i == 0)
-            fprintf(wfp, "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n", "event_time","open","close","high","low","volume","adosc", "atr", "bb_upper", "bb_middle", "bb_lower", "macd", "macd_signal", "macd_hist", "mfi", "rsi", "sar", "tema");
+            fprintf(wfp, "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n", "event_time","open","close","high","low","volume","original_open","original_close","original_high","original_low","original_volume", "adosc", "atr", "bb_upper", "bb_middle", "bb_lower", "macd", "macd_signal", "macd_hist", "mfi", "rsi", "sar", "tema");
         else if (i > 2) {
             struct candle *candle = &candles[i];
             struct candle *new_candle = &new_candles[i];
@@ -207,6 +213,12 @@ void calculate_indicators(struct indicator_selection *selection, struct candle *
             new_candle->high = normalize(candle_prev->high, candle->high);
             new_candle->low = normalize(candle_prev->low, candle->low);
             new_candle->volume = normalize(candle_prev->volume, candle->volume);
+
+            new_candle->original_open = candle->open;
+            new_candle->original_close = candle->close;
+            new_candle->original_high = candle->high;
+            new_candle->original_low = candle->low;
+            new_candle->original_volume = candle->volume;
 
             new_candle->adosc = normalize(candle_prev->adosc, candle->adosc);
             new_candle->atr = normalize(candle_prev->atr, candle->atr);
@@ -226,13 +238,18 @@ void calculate_indicators(struct indicator_selection *selection, struct candle *
             new_candle->tema = normalize(candle_prev->tema, candle->tema);
 
 
-            fprintf(wfp, "%ld,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf\n", 
+            fprintf(wfp, "%ld,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf,%.8lf\n", 
                 new_candle->time, 
                 new_candle->open, 
                 new_candle->close, 
                 new_candle->high, 
                 new_candle->low, 
                 new_candle->volume, 
+                new_candle->original_open,
+                new_candle->original_close,
+                new_candle->original_high,
+                new_candle->original_low,
+                new_candle->original_volume,
                 new_candle->adosc,
                 new_candle->atr,
                 new_candle->bb_upper,

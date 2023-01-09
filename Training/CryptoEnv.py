@@ -1,12 +1,10 @@
 import gym
-from enum import Enum
 from gym import spaces
 import numpy as np
+from enum import Enum
 import collections
-import pandas as pd
 
 from Algorithms.Algorithm1 import Algorithm
-
 
 INITIAL_BALANCE = 100
 INITIAL_COUNT_AMCOUNT = 0
@@ -16,17 +14,14 @@ class ActionSpace(Enum):
     HOLD = 1
     SELL = 2
 
-# observation space looks like this
-# 10 candles and their data
-# (10, 18)
 
 class CryptoEnvironment(gym.Env):
     metadata = {'render.modes': ['human']}
-    def __init__(self, data_location, lookback_window = 10):
+    def __init__(self, df, lookback_window):
         super(CryptoEnvironment, self).__init__()
-        self.data = pd.read_csv("./Data/dataset/", data_location)
-        self._org_data = pd.read_csv("./Data/raw/", data_location)
 
+
+        self.data = df
         self._feature_count = len(self.data.columns)
 
         self._input_shape = (lookback_window, self._feature_count)
@@ -53,7 +48,7 @@ class CryptoEnvironment(gym.Env):
 
 
     def _get_state(self, step_count):
-        return self.data.iloc[step_count * 10: step_count * 10 + 10].values
+        return self.data.iloc[step_count * self._lookback_window: step_count * self._lookback_window + self._lookback_window].values
 
     def _get_next_state(self):
         self._step_count += 1
@@ -78,7 +73,7 @@ class CryptoEnvironment(gym.Env):
         # get next state
         self._items_used = self._lookback_window * self._step_count
 
-        if len(self.data) - self._items_used < 10:
+        if len(self.data) - self._items_used < self._lookback_window:
             return self._state, reward, True, {}
 
         else:
@@ -87,9 +82,11 @@ class CryptoEnvironment(gym.Env):
             return next_state, reward, False, {}
 
     def _buy(self):
+        self._previous_buy_sell.append((self._state, ActionSpace.BUY.value))
         return self._algorithm.buy_reward()
 
     def _sell(self):
+        self._previous_buy_sell.append((self._state, ActionSpace.SELL.value))
         return self._algorithm.sell_reward()
 
     def _hold(self):

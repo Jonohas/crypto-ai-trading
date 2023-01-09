@@ -3,19 +3,20 @@ class Algorithm:
         self.env = environment
 
     def buy_reward(self):
-        return 2
+        return 0
 
     def sell_reward(self):
+
         previous_buy = self._get_previous_buy()
         current = self.env._state
 
         if previous_buy is None:
-            return 1
+            return 0
 
-        if previous_buy[-1][2] >= current[-1][2]:
-            return -4
+        print(f"Previous buy: {previous_buy[0][7]}")
 
-        return 3
+        # return on investment (ROI)
+        return (current[0][7] - previous_buy[0][7]) / previous_buy[0][7]
 
     def hold_reward(self):
         return 0
@@ -25,4 +26,4 @@ class Algorithm:
             if self.env._previous_buy_sell[i - 1][1] == 0:
                 return self.env._previous_buy_sell[i - 1][0]
 
-            else: return None
+        return None
