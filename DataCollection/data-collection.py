@@ -10,6 +10,8 @@ from threading import Thread
 
 base_url = "https://api.binance.com"
 
+path_prefix = "../Data"
+
 wanted_symbols = ["VET"]
 
 request_limit = 1200
@@ -56,7 +58,7 @@ def write_data():
         symbol = write_object["symbol"]
         data = write_object["data"]
 
-        file_name = f"Data/raw/{symbol}.csv"
+        file_name = f"{path_prefix}/raw/{symbol}.csv"
         # save data to json file
         if exists(file_name):
             with open(file_name, "a") as f:
@@ -101,8 +103,8 @@ def get_symbols():
     return symbols
 
 def clean_up():
-    shutil.rmtree('Data/raw')
-    os.mkdir('Data/raw')
+    shutil.rmtree(f'{path_prefix}/raw')
+    os.mkdir(f'{path_prefix}/raw')
     
 
 if __name__ == "__main__":
