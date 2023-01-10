@@ -6,6 +6,12 @@ import collections
 
 from Algorithms.Algorithm1 import Algorithm
 
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # or any {'0', '1', '2'}
+
+import tensorflow as tf
+tf.get_logger().setLevel('INFO')
+
 INITIAL_BALANCE = 100
 INITIAL_COUNT_AMCOUNT = 0
 
@@ -17,15 +23,13 @@ class ActionSpace(Enum):
 
 class CryptoEnvironment(gym.Env):
     metadata = {'render.modes': ['human']}
-    def __init__(self, df, lookback_window):
+    def __init__(self, df):
         super(CryptoEnvironment, self).__init__()
 
-
         self.data = df
-        self._feature_count = len(self.data.columns)
 
-        self._input_shape = (lookback_window, self._feature_count)
-        self._lookback_window = lookback_window
+        self._input_shape = self.data[0].shape
+        self._lookback_window = self._input_shape[0]
 
         self._step_count = 0
 
@@ -48,7 +52,7 @@ class CryptoEnvironment(gym.Env):
 
 
     def _get_state(self, step_count):
-        return self.data.iloc[step_count * self._lookback_window: step_count * self._lookback_window + self._lookback_window].values
+        return self.data[step_count]
 
     def _get_next_state(self):
         self._step_count += 1
@@ -82,11 +86,9 @@ class CryptoEnvironment(gym.Env):
             return next_state, reward, False, {}
 
     def _buy(self):
-        self._previous_buy_sell.append((self._state, ActionSpace.BUY.value))
         return self._algorithm.buy_reward()
 
     def _sell(self):
-        self._previous_buy_sell.append((self._state, ActionSpace.SELL.value))
         return self._algorithm.sell_reward()
 
     def _hold(self):

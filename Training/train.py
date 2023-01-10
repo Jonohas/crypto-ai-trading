@@ -3,6 +3,25 @@ from CryptoAgent import CryptoAgent
 import pandas as pd
 import numpy as np
 import random
+import time
+from tqdm import tqdm
+
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # or any {'0', '1', '2'}
+
+
+import tensorflow
+print(tensorflow.__version__)
+
+def create_lookback_batches(data):
+    LOOPBACK_WINDOW = 20
+    lookback_batches = []
+
+    # loop through data and create batch every 20 samples
+    for i in range(0, len(data), LOOPBACK_WINDOW):
+        lookback_batches.append(data[i:i+LOOPBACK_WINDOW])
+
+    return lookback_batches
 
 
 
@@ -18,14 +37,19 @@ def main():
     UPDATE_TARGET_INTERVAL = 500
 
     df = pd.read_csv("../Data/dataset/VETUSDT.csv")
-    env = CryptoEnvironment(df, LOOPBACK_WINDOW)
+    loopback_batches = create_lookback_batches(df)
+    loopback_batches = np.array(loopback_batches, dtype=object)
+    print(loopback_batches.shape, loopback_batches[0].shape)
+
+
+    env = CryptoEnvironment(loopback_batches)
     agent = CryptoAgent(input_shape=(LOOPBACK_WINDOW, len(df.columns)))
     state = env.reset()
 
     update_counter = 0
     reward_history = []
 
-    for episode in range(200):
+    for episode in tqdm(range(200)):
         episode_reward = 0
         step_count = 0
 
@@ -45,19 +69,21 @@ def main():
                 action = ActionSpace(np.argmax(q_values))
 
 
+
+
             new_state, reward, done, info = env.step(action)
             if done and step_count < 199:
                 reward = -10
 
             step_count += 1
-            step = (state, action, reward, new_state, done)
+            step = (state, action.value, reward, new_state, done)
             agent.append_to_replay_memory(step)
             state = new_state
             episode_reward += reward
         
         reward_history.append(episode_reward)
 
-        if len(agent.replay_memory) > BATCH_SIZE:
+        if len(agent.memory) > BATCH_SIZE:
             EPSILON = EPSILON_DECAY * EPSILON
             if EPSILON < MIN_EPSILON:
                 EPSILON = MIN_EPSILON
