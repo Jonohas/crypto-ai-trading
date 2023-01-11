@@ -75,7 +75,7 @@ def main():
 
     timestamp = time.strftime("%Y%m%d-%H%M%S")
 
-    filename = create_reward_history_file(timestamp, ['average_reward', 'epsilon'])
+    filename = create_reward_history_file(timestamp, ['average_reward', 'epsilon', 'balance'])
 
     for episode in progressbar:
         episode_reward = 0
@@ -163,7 +163,7 @@ def main():
         update_counter += 1
         
         reward_history.append(episode_reward)
-        write_to_file(filename, [average_reward, EPSILON])
+        write_to_file(filename, [average_reward, EPSILON, env._balance])
 
     # save last model to Models folder with timestamp
     
