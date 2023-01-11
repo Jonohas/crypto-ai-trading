@@ -85,7 +85,7 @@ def main():
 
         done = False
 
-        for step in range(10):
+        while True:
             if done:
                 break
             r = random.random()

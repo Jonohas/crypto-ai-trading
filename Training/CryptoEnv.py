@@ -37,7 +37,7 @@ class CryptoEnvironment(gym.Env):
     def __init__(self, sequences, lookback_window=20):
         super(CryptoEnvironment, self).__init__()
 
-
+        self._risk = 0.20
         self.data = sequences
 
         self._input_shape = self.data[0].shape
@@ -85,11 +85,16 @@ class CryptoEnvironment(gym.Env):
         if action == ActionSpace.HOLD.value:
             reward += self._hold()
 
+
+
         # get next state
         self._items_used = self._lookback_window * self._step_count
 
         # if len(self.data) - self._items_used < self._lookback_window:
         #     return self._state, reward, True, {}
+
+        if self._balance < 20 and self._coin_amount == 0:
+            return self._state, reward, True, {}
 
         # else:
         next_state = self._get_next_state()
@@ -97,9 +102,16 @@ class CryptoEnvironment(gym.Env):
         return next_state, reward, False, {}
 
     def _buy(self):
+        # update balance
+        self._balance -= ((self._balance * self._risk) / self._state.iloc[-1][7]) * self._state.iloc[-1][7]
+        self._coin_amount += (self._balance * self._risk) / self._state.iloc[-1][7]
         return self._algorithm.buy_reward()
 
     def _sell(self):
+        # sell all coins
+        self._balance += self._coin_amount * self._state.iloc[-1][7]
+        self._coin_amount = 0
+
         return self._algorithm.sell_reward()
 
     def _hold(self):

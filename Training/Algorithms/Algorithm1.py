@@ -24,5 +24,22 @@ class Algorithm:
         return (((current.iloc[-1][7] - previous_buy.iloc[-1][7]) / previous_buy.iloc[-1][7]) * 100)
 
     def hold_reward(self):
-        return 0
+        # check for uptrend only if we have a previous buy
+        previous_buy = self._get_previous_buy()
+
+        previous_step = self.env._get_state(self.env._step_count - 1)
+        current = self.env._state
+        next_step = self.env._get_state(self.env._step_count + 1)
+
+        # check if we are in a uptrend
+        if previous_step.iloc[-1][7] < current.iloc[-1][7] and current.iloc[-1][7] < next_step.iloc[-1][7]:
+            # we are in a uptrend
+            if previous_buy is None:
+                return -1
+            return 1
+        else:
+            # we are in a downtrend
+            if previous_buy is None:
+                return 1
+            return -1
 
