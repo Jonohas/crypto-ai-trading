@@ -39,8 +39,8 @@ def create_reward_history_file(timestamp, columns):
 
 def write_to_file(filename, data):
     with open(filename, "a") as f:
-        average_reward, epsilon = data
-        f.write(str(average_reward) + "," + str(epsilon) + "\n")
+        average_reward, epsilon, balance = data
+        f.write(str(average_reward) + "," + str(epsilon) + "," + str(balance) + "\n")
 
 
 # Receives an index and returns the data for the training and for the environment
