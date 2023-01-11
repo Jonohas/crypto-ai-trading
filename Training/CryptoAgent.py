@@ -1,6 +1,6 @@
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # or any {'0', '1', '2'}
-
+# import os
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # or any {'0', '1', '2'}
+import gc
 
 
 import tensorflow as tf
@@ -13,11 +13,11 @@ REPLAY_MEMORY_SIZE = 10000
 DEFAULT_LOOKBACK_WINDOW = 10
 
 import tensorflow as tf
-tf.get_logger().setLevel('INFO')
+sess = tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(log_device_placement=True))
 
 # set memory growth to true
-
-
+physical_devices = tf.config.experimental.list_physical_devices('GPU')
+tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 class CryptoAgent():
     def __init__(self, replay_capacity=REPLAY_MEMORY_SIZE, input_shape=(DEFAULT_LOOKBACK_WINDOW, 23)):
@@ -47,22 +47,34 @@ class CryptoAgent():
 
     def build_model(self):
         model = keras.Sequential()
-        model.add(layers.LSTM(32, activation='relu', input_shape=self.input_shape))
-        model.add(layers.Dense(3))
-        model.compile(optimizer='adam', loss='mse', metrics=['mae', 'accuracy'])
+
+        model.add(layers.LSTM(200, input_shape=self.input_shape, return_sequences=True))
+        model.add(layers.LSTM(128, return_sequences=True))
+        model.add(layers.LSTM(64, return_sequences=True))
+        model.add(layers.LSTM(32))
+        model.add(layers.Dense(16, activation='relu'))
+        model.add(layers.Dense(3, activation='softmax'))
+
+        model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['mae', 'accuracy'])
         return model
 
-    def fit_network_q(self, batch_size):
-        self.batch_size = batch_size
+    def fit_network_q(self, X, y, batch_size):
+        self.model_q.fit(X, y, batch_size=batch_size, verbose=0)
 
     def predict_network_q(self, state):
         self.state = state
-        self.q_policy = self.model_q.predict(self.state, verbose = 0)
+        value = tf.convert_to_tensor(self.state)
+        self.q_policy = self.model_q.predict(value, verbose = 0, batch_size=50)
+        gc.collect()
+        keras.backend.clear_session() 
         return self.q_policy
 
     def predict_network_target(self, state):
         self.state = state
-        self.q_policy = self.model_target.predict(self.state, verbose = 0)
+        value = tf.convert_to_tensor(self.state)
+        self.q_policy = self.model_target.predict(value, verbose = 0)
+        gc.collect()
+        keras.backend.clear_session() 
         return self.q_policy
 
     def update_network_target(self):

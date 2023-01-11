@@ -3,17 +3,28 @@ from gym import spaces
 import numpy as np
 from enum import Enum
 import collections
+import pandas as pd
+import random
 
 from Algorithms.Algorithm1 import Algorithm
 
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # or any {'0', '1', '2'}
+# import os
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # or any {'0', '1', '2'}
 
-import tensorflow as tf
-tf.get_logger().setLevel('INFO')
 
 INITIAL_BALANCE = 100
 INITIAL_COUNT_AMCOUNT = 0
+
+
+# create a generator that will return a batch of data
+def data_generator(batch_size, files):
+    while True:
+        random.shuffle(files)
+        for file in files:
+            data = pd.read_csv(file)
+            for i in range(0, len(data), batch_size):
+                yield data[i:i+batch_size]
+
 
 class ActionSpace(Enum):
     BUY = 0
@@ -23,10 +34,11 @@ class ActionSpace(Enum):
 
 class CryptoEnvironment(gym.Env):
     metadata = {'render.modes': ['human']}
-    def __init__(self, df):
+    def __init__(self, sequences, lookback_window=20):
         super(CryptoEnvironment, self).__init__()
 
-        self.data = df
+
+        self.data = sequences
 
         self._input_shape = self.data[0].shape
         self._lookback_window = self._input_shape[0]
@@ -49,7 +61,6 @@ class CryptoEnvironment(gym.Env):
 
         self._balance = INITIAL_BALANCE
         self._coin_amount = INITIAL_COUNT_AMCOUNT
-
 
     def _get_state(self, step_count):
         return self.data[step_count]
@@ -77,13 +88,13 @@ class CryptoEnvironment(gym.Env):
         # get next state
         self._items_used = self._lookback_window * self._step_count
 
-        if len(self.data) - self._items_used < self._lookback_window:
-            return self._state, reward, True, {}
+        # if len(self.data) - self._items_used < self._lookback_window:
+        #     return self._state, reward, True, {}
 
-        else:
-            next_state = self._get_next_state()
-            self._state = next_state
-            return next_state, reward, False, {}
+        # else:
+        next_state = self._get_next_state()
+        self._state = next_state
+        return next_state, reward, False, {}
 
     def _buy(self):
         return self._algorithm.buy_reward()
