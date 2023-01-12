@@ -37,10 +37,10 @@ class Algorithm:
 
     def buy_reward(self):
         if self._is_previous_buy() and not self._is_uptrend():
-            return 4
+            return 2
 
         if self._is_previous_buy() and self._is_uptrend():
-            return 2
+            return 1
         
         return -2
 
@@ -53,29 +53,27 @@ class Algorithm:
         if previous_buy is None:
             return 0
 
-        # return on investment (ROI)
-        return (((current[-1][7] - previous_buy[-1][7]) / previous_buy[-1][7]) * 100)
+        ROI = ((current[-1][7] - previous_buy[-1][7]) / previous_buy[-1][7]) * 100
+
+        if ROI > 0:
+            return ROI ** 2
+
+        return -(ROI ** 2)
 
     def hold_reward(self):
         # check for uptrend only if we have a previous buy
         previous_buy = self._get_previous_buy()
 
-        previous_step = self.env._get_state(self.env._step_count - 1)
-        current = self.env._state
-        try:
-            next_step = self.env._get_state(self.env._step_count + 1)
-        except IndexError:
-            return 0
-
-        # check if we are in a uptrend
-        if previous_step[-1][7] < current[-1][7] and current[-1][7] < next_step[-1][7]:
-            # we are in a uptrend
-            if previous_buy is None:
-                return -10  
+        if self._is_uptrend() and self._is_previous_buy():
             return 20
-        else:
-            # we are in a downtrend
-            if previous_buy is None:
-                return 20
-            return -10
+
+        elif not self._is_uptrend() and self._is_previous_buy():
+            return -30
+
+        elif self._is_uptrend() and not self._is_previous_buy():
+            return -20
+
+        elif not self._is_uptrend() and not self._is_previous_buy():
+            return 20
+
 
