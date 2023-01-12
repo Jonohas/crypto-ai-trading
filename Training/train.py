@@ -82,7 +82,7 @@ def main():
 
     timestamp = time.strftime("%Y%m%d-%H%M%S")
 
-    filename = create_reward_history_file(timestamp, ['average_reward', 'epsilon', 'balance','episode', 'time_predict', 'time_train', 'steps'])
+    filename = create_reward_history_file(timestamp, ['average_reward', 'epsilon', 'balance', 'episode', 'time_train', 'steps'])
 
     for episode in progressbar:
         episode_reward = 0
@@ -172,7 +172,7 @@ def main():
         
         reward_history.append(episode_reward)
 
-        write_to_file(filename, [average_reward, EPSILON, episode, time_predict, time_train, step_count])
+        write_to_file(filename, [average_reward, EPSILON, episode, time_train, step_count])
 
         if episode % SAVE_MODEL_INTERVAL == 0:
             agent.model_q.save(f"../Models/model_{timestamp}_{episode}.h5")
