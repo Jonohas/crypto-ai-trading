@@ -3,6 +3,7 @@ Preprocessing/main.o
 Preprocessing/output
 logs/
 Results/
+Models/
 *.pyc
 
 __pycache__/
