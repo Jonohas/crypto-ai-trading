@@ -1,5 +1,5 @@
-# import os
-# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # or any {'0', '1', '2'}
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # or any {'0', '1', '2'}
 import gc
 
 
@@ -76,7 +76,7 @@ class CryptoAgent():
     def predict_network_q(self, state):
         self.state = state
         value = tf.convert_to_tensor(self.state)
-        self.q_policy = self.model_q.predict(value, verbose = 0, batch_size=50)
+        self.q_policy = self.model_q.predict(value, verbose = 0)
         gc.collect()
         keras.backend.clear_session() 
         return self.q_policy

@@ -1,0 +1,2 @@
+- Build model for downward trend
+- Build model for upward trend

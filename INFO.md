@@ -196,3 +196,8 @@ TEMA = (3 * EMA_{1}) - (3 * EMA_{2}) + EMA_{3}
 - EMA_{1} = Exponential Moving Average of the price
 - EMA_{2} = Exponential Moving Average of EMA_{1}
 - EMAS_{3} = Exponential Moving Average of EMA_{2}
+
+
+
+
+## Data

@@ -10,14 +10,14 @@ import matplotlib.pyplot as plt
 # import os
 # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # or any {'0', '1', '2'}
 
-original_items = ['event_time','original_open', 'original_close', 'original_high', 'original_low', 'original_volume']
+original_items = [0,6,7,8,9,10]
 
 def create_lookback_batches(data, lookback_window=20):
 
     # create sequences from dataframe
     sequences = []
-    for i in range(lookback_window - 1, len(data)):
-        sequences.append(data[i:i+lookback_window])
+    for i in range(lookback_window + 1, len(data)):
+        sequences.append(data[i - lookback_window:i])
 
     return np.array(sequences)
 
@@ -38,9 +38,14 @@ def create_reward_history_file(timestamp, columns):
     return filename
 
 def write_to_file(filename, data):
+    i = 0
     with open(filename, "a") as f:
-        average_reward, epsilon, balance = data
-        f.write(str(average_reward) + "," + str(epsilon) + "," + str(balance) + "\n")
+        for item in data:
+            if i != 0:
+                f.write(",")
+            f.write(str(item))
+            i += 1
+        f.write("\n")
 
 
 # Receives an index and returns the data for the training and for the environment
@@ -49,15 +54,16 @@ def get_train_env_data(data):
     return item[original_items], item.drop(original_items, axis=1)
 
 def main():
-    LOOPBACK_WINDOW = 20
+    LOOPBACK_WINDOW = 15
     INPUT_SAMPLE_COUNT = 10
     BATCH_SIZE = 64
 
     EPSILON = 0.98 # Exploration rate
-    EPSILON_DECAY = 0.993 # Decay rate
+    EPSILON_DECAY = 0.98 # Decay rate
     DISCOUNT = 0.90
     MIN_EPSILON = 0.01 # Minimum exploration rate
     UPDATE_TARGET_INTERVAL = 500
+    SAVE_MODEL_INTERVAL = 20
 
     df = pd.read_csv("../Data/dataset/VETUSDT.csv")
     sequences = create_lookback_batches(df, LOOPBACK_WINDOW)
@@ -71,11 +77,12 @@ def main():
     reward_history = []
     average_reward = 0
 
-    progressbar = tqdm(range(400))
+
+    progressbar = tqdm(range(100))
 
     timestamp = time.strftime("%Y%m%d-%H%M%S")
 
-    filename = create_reward_history_file(timestamp, ['average_reward', 'epsilon', 'balance'])
+    filename = create_reward_history_file(timestamp, ['average_reward', 'epsilon', 'balance','episode', 'time_predict', 'time_train', 'steps'])
 
     for episode in progressbar:
         episode_reward = 0
@@ -85,26 +92,29 @@ def main():
 
         done = False
 
-        while True:
-            if done:
-                break
+        while not done:
             r = random.random()
+            progressbar.set_description(f"Episode: {episode}, Step: {step_count}, Epsilon: {EPSILON}")
+
+            time_predict = None
 
             if (r <= EPSILON):
                 action = random.choice(list(ActionSpace))
-                progressbar.set_description(f"Episode: {episode}, Step: {step_count}, Action: {action}, Random: True, Reward: {episode_reward}, Average Reward: {average_reward}, Epsilon: {EPSILON}")
+
+                
             else:
                 _, data_for_nn = get_train_env_data(state)
                 array_state = np.asarray(data_for_nn)
                 feature_count = array_state.shape[1]
+                start_time_prediction = time.time()
                 q_values = agent.predict_network_q(array_state.reshape(1, LOOPBACK_WINDOW,feature_count))
-                progressbar.set_description(f"Episode: {episode}, Step: {step_count}, Action: {q_values}, Random: True, Reward: {episode_reward}, Average Reward: {average_reward}, Epsilon: {EPSILON}")
+                end_time_prediction = time.time()
+                time_predict  = end_time_prediction - start_time_prediction
                 action = ActionSpace(np.argmax(q_values))
 
 
+
             new_state, reward, done, info = env.step(action.value)
-            if done and step_count < 199:
-                reward = -10
 
             step_count += 1
             step = (state, action.value, reward, new_state, done)
@@ -147,7 +157,10 @@ def main():
                 else:
                     y[i, mini_batch_actions[i]] = mini_batch_rewards[i] + DISCOUNT * max_q_next_state[i]
 
+            start_time_fit_q = time.time()
             agent.fit_network_q(mini_batch_states, y, batch_size=BATCH_SIZE)
+            end_time_fit_q = time.time()
+            time_train  = end_time_fit_q - start_time_fit_q
 
         else:
             env.render()
@@ -158,11 +171,15 @@ def main():
         update_counter += 1
         
         reward_history.append(episode_reward)
-        write_to_file(filename, [average_reward, EPSILON, env._balance])
+
+        write_to_file(filename, [average_reward, EPSILON, episode, time_predict, time_train, step_count])
+
+        if episode % SAVE_MODEL_INTERVAL == 0:
+            agent.model_q.save(f"../Models/model_{timestamp}_{episode}.h5")
 
     # save last model to Models folder with timestamp
-    
-    agent.model_q.save(f"../Models/model_{timestamp}.h5")
+
+    agent.model_q.save(f"../Models/model_{timestamp}_final.h5")
 
 
 if __name__ == "__main__":

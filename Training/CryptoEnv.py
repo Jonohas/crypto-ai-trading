@@ -96,20 +96,28 @@ class CryptoEnvironment(gym.Env):
         if self._balance < 20 and self._coin_amount == 0:
             return self._state, reward, True, {}
 
+        
+
         # else:
-        next_state = self._get_next_state()
+        try:
+            next_state = self._get_next_state()
+        except IndexError:
+            return self._state, reward, True, {}
+
         self._state = next_state
         return next_state, reward, False, {}
 
     def _buy(self):
         # update balance
-        self._balance -= ((self._balance * self._risk) / self._state.iloc[-1][7]) * self._state.iloc[-1][7]
-        self._coin_amount += (self._balance * self._risk) / self._state.iloc[-1][7]
+        self._balance -= ((self._balance * self._risk) / self._state[-1][7]) * self._state[-1][7]
+        self._coin_amount += (self._balance * self._risk) / self._state[-1][7]
         return self._algorithm.buy_reward()
 
     def _sell(self):
         # sell all coins
-        self._balance += self._coin_amount * self._state.iloc[-1][7]
+        self._balance += self._coin_amount * self._state[-1][7]
+        # calculate profit
+        self._profit = self._balance - INITIAL_BALANCE
         self._coin_amount = 0
 
         return self._algorithm.sell_reward()
