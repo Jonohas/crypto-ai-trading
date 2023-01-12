@@ -36,10 +36,10 @@ class Algorithm:
             # we are in a uptrend
             if previous_buy is None:
                 return -1
-            return 1
+            return 2
         else:
             # we are in a downtrend
             if previous_buy is None:
-                return 1
+                return 2
             return -1
 

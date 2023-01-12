@@ -53,8 +53,8 @@ def main():
     INPUT_SAMPLE_COUNT = 10
     BATCH_SIZE = 64
 
-    EPSILON = 0.95 # Exploration rate
-    EPSILON_DECAY = 0.98 # Decay rate
+    EPSILON = 0.98 # Exploration rate
+    EPSILON_DECAY = 0.993 # Decay rate
     DISCOUNT = 0.90
     MIN_EPSILON = 0.01 # Minimum exploration rate
     UPDATE_TARGET_INTERVAL = 500
@@ -71,7 +71,7 @@ def main():
     reward_history = []
     average_reward = 0
 
-    progressbar = tqdm(range(50))
+    progressbar = tqdm(range(400))
 
     timestamp = time.strftime("%Y%m%d-%H%M%S")
 
@@ -127,17 +127,12 @@ def main():
             mini_batch = []
             for item in minibatch_samples:
                 mini_batch.append((get_train_env_data(item[0])[1], item[1], item[2], get_train_env_data(item[3])[1], item[4]))
-            
-
-            
 
             mini_batch_states = np.asarray(list(zip(*mini_batch))[0],dtype=float)
             mini_batch_actions = np.asarray(list(zip(*mini_batch))[1], dtype = int)
             mini_batch_rewards = np.asarray(list(zip(*mini_batch))[2], dtype = float)
             mini_batch_next_state = np.asarray(list(zip(*mini_batch))[3],dtype=float)
             mini_batch_done = np.asarray(list(zip(*mini_batch))[4],dtype=bool)
-
-
 
             current_state_q_values = agent.predict_network_q(mini_batch_states)
             y = current_state_q_values

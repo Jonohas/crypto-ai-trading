@@ -6,8 +6,10 @@ import gc
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+from tensorflow.keras.optimizers import Adam
 from collections import deque
 import random
+import datetime
 
 REPLAY_MEMORY_SIZE = 10000
 DEFAULT_LOOKBACK_WINDOW = 10
@@ -24,6 +26,9 @@ class CryptoAgent():
         self.capacity = replay_capacity
         self.memory = deque(maxlen=replay_capacity)
         self.populated = False
+
+        log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        self.tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
         self.input_shape = input_shape
 
@@ -48,6 +53,8 @@ class CryptoAgent():
     def build_model(self):
         model = keras.Sequential()
 
+        optimizer = Adam(learning_rate=0.002)
+
         model.add(layers.LSTM(200, input_shape=self.input_shape, return_sequences=True))
         model.add(layers.Dropout(0.2))
         model.add(layers.LSTM(128, return_sequences=True))
@@ -60,11 +67,11 @@ class CryptoAgent():
         model.add(layers.Dropout(0.2))
         model.add(layers.Dense(3, activation='softmax'))
 
-        model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['mae', 'accuracy'])
+        model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['mae', 'accuracy'])
         return model
 
     def fit_network_q(self, X, y, batch_size):
-        self.model_q.fit(X, y, batch_size=batch_size, verbose=0)
+        self.model_q.fit(X, y, batch_size=batch_size, verbose=0, callbacks=[self.tensorboard_callback])
 
     def predict_network_q(self, state):
         self.state = state

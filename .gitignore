@@ -1,3 +1,6 @@
 Data/
 Preprocessing/main.o
 Preprocessing/output
+logs/
+Results/
+*.pyc
