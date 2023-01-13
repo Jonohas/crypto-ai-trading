@@ -4,5 +4,6 @@ Preprocessing/output
 logs/
 Results/
 Models/
+.env
 
 **/__pycache__/
