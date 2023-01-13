@@ -4,6 +4,5 @@ Preprocessing/output
 logs/
 Results/
 Models/
-*.pyc
 
-__pycache__/
+**/__pycache__/
