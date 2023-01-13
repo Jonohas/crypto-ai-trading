@@ -54,19 +54,19 @@ def get_train_env_data(data):
     return item[original_items], item.drop(original_items, axis=1)
 
 def main():
-    LOOPBACK_WINDOW = 15
+    LOOPBACK_WINDOW = 100
     INPUT_SAMPLE_COUNT = 10
     BATCH_SIZE = 64
 
     EPSILON = 0.98 # Exploration rate
-    EPSILON_DECAY = 0.98 # Decay rate
+    EPSILON_DECAY = 0.992 # Decay rate
     DISCOUNT = 0.90
     MIN_EPSILON = 0.01 # Minimum exploration rate
     UPDATE_TARGET_INTERVAL = 500
     SAVE_MODEL_INTERVAL = 20
 
     df = pd.read_csv("../Data/dataset/VETUSDT.csv")
-    sequences = create_lookback_batches(df, LOOPBACK_WINDOW)
+    sequences = create_lookback_batches(df[:], LOOPBACK_WINDOW)
 
 
     env = CryptoEnvironment(sequences, LOOPBACK_WINDOW)
@@ -78,7 +78,7 @@ def main():
     average_reward = 0
 
 
-    progressbar = tqdm(range(100))
+    progressbar = tqdm(range(400))
 
     timestamp = time.strftime("%Y%m%d-%H%M%S")
 
@@ -96,8 +96,6 @@ def main():
             r = random.random()
             progressbar.set_description(f"Episode: {episode}, Step: {step_count}, Epsilon: {EPSILON}")
 
-            time_predict = None
-
             if (r <= EPSILON):
                 action = random.choice(list(ActionSpace))
 
@@ -113,12 +111,11 @@ def main():
                 action = ActionSpace(np.argmax(q_values))
 
 
-
             new_state, reward, done, info = env.step(action.value)
 
             step_count += 1
             step = (state, action.value, reward, new_state, done)
-
+            
             agent.append_to_replay_memory(step)
             state = new_state
             episode_reward += reward
@@ -143,7 +140,7 @@ def main():
             mini_batch_rewards = np.asarray(list(zip(*mini_batch))[2], dtype = float)
             mini_batch_next_state = np.asarray(list(zip(*mini_batch))[3],dtype=float)
             mini_batch_done = np.asarray(list(zip(*mini_batch))[4],dtype=bool)
-
+            
             current_state_q_values = agent.predict_network_q(mini_batch_states)
             y = current_state_q_values
 

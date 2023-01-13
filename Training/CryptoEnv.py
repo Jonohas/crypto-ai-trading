@@ -43,6 +43,8 @@ class CryptoEnvironment(gym.Env):
         self._input_shape = self.data[0].shape
         self._lookback_window = self._input_shape[0]
 
+        self._lookahead_window = 10
+
         self._step_count = 0
 
         self._items_used = 0
@@ -62,6 +64,10 @@ class CryptoEnvironment(gym.Env):
         self._balance = INITIAL_BALANCE
         self._coin_amount = INITIAL_COUNT_AMCOUNT
 
+        self._profitable_sell_threshold = 1 # 1%
+        self._profitable_sell_reward = 1
+        self._non_profitable_sell_punishment = -self._profitable_sell_reward
+
     def _get_state(self, step_count):
         return self.data[step_count]
 
@@ -71,8 +77,7 @@ class CryptoEnvironment(gym.Env):
 
     def step(self, action):
 
-        if action == ActionSpace.BUY.value or action == ActionSpace.SELL.value:
-            self._previous_buy_sell.append((self._state, action))
+
 
         reward = 0
 
@@ -85,6 +90,8 @@ class CryptoEnvironment(gym.Env):
         if action == ActionSpace.HOLD.value:
             reward += self._hold()
 
+        if action == ActionSpace.BUY.value or action == ActionSpace.SELL.value:
+            self._previous_buy_sell.append((self._state, action, self._step_count))
 
 
         # get next state
@@ -93,9 +100,14 @@ class CryptoEnvironment(gym.Env):
         # if len(self.data) - self._items_used < self._lookback_window:
         #     return self._state, reward, True, {}
 
-        if self._balance < 20 and self._coin_amount == 0:
+
+        if (self._coin_amount * self._state[-1][7] < 20) and self._balance < 40:
             return self._state, reward, True, {}
 
+        if self._balance < 20 and self._coin_amount == 0:
+            return self._state, reward, True, {}
+        if self._balance < 20:
+            return self._state, reward, True, {}
         
 
         # else:
