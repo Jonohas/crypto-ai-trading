@@ -1,3 +1,5 @@
 - Build model for downward trend
 - Build model for upward trend
 - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA_PREFIX/lib/
+
+- Make sure everything works as before
