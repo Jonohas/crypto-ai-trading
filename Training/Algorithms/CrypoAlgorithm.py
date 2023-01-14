@@ -82,7 +82,6 @@ class Algorithm:
             return 0
 
         if not self.env._previous_action_buy:
-            
             temp_max_price = current_price
             temp_min_price = current_price
 
@@ -150,6 +149,7 @@ class Algorithm:
 
         step_reward = 0
 
+
         if not self.env._previous_action_buy:
 
             if last_buy_price * (1 + (self.env._profitable_sell_threshold / 100)) >= current_price:
@@ -199,7 +199,6 @@ class Algorithm:
         return step_reward * 100
 
     def hold_reward(self):
-        print("hold reward")
         # check for uptrend only if we have a previous buy
 
         ipb = self.env._previous_action_buy
@@ -207,8 +206,6 @@ class Algorithm:
         is_up = self._is_uptrend()
         is_down = self._is_downtrend()
 
-        print("is_up: ", is_up)
-        print("is_down: ", is_down)
 
         if is_up and ipb:
             return 20

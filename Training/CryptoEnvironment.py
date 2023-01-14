@@ -10,13 +10,13 @@ from Algorithms.CrypoAlgorithm import Algorithm
 class CryptoEnvironment(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, data, training_data, arguments, input_shape, verbose=False):
+    def __init__(self, data, training_data, arguments, input_shape, log_dir, verbose=False):
         super(CryptoEnvironment, self).__init__()
 
         self._algorithm = Algorithm(self)
 
         self._default_arguments = arguments
-
+        self.log_dir = log_dir
         self._verbose = verbose
 
         self._data = data
@@ -83,17 +83,17 @@ class CryptoEnvironment(gym.Env):
         reward = 0
 
 
-        if action == ActionSpace.BUY:
+        if action == ActionSpace.BUY.value:
             self._previous_buy_tick = self._tick
             self._previous_action_buy = True
             reward += self._buy()
 
-        if action == ActionSpace.SELL:
+        if action == ActionSpace.SELL.value:
             self._previous_sell_tick = self._tick
             self._previous_action_buy = False
             reward += self._sell()
 
-        if action == ActionSpace.HOLD:
+        if action == ActionSpace.HOLD.value:
             reward += self._hold()
 
         if (self._coin_amount * self._current_candle[7] < 20) and self._account_balance < 40:
