@@ -70,27 +70,29 @@ class Algorithm:
 
         current_price = self.env._current_candle[7]
 
+    
+        
+        previous_sell = self._get_previous_sell()
 
-        try:
-            previous_sell = self._get_previous_sell()
-        except:
+        if previous_sell is None:
             return 0
 
         try:
-            last_buy_price = self._get_previous_buy()[7]
-        except:
+            last_buy_price = self.env._get_state(self._get_previous_buy())['original_close']
+        except Exception as e:
             return 0
 
         if not self.env._previous_action_buy:
+
             temp_max_price = current_price
             temp_min_price = current_price
 
             for tick in range(previous_sell, self.env._tick + self.env._look_ahead_window):
+                
                 if tick >= len(self.env._data) - 1:
                     continue
-                price = self.env._get_state(tick)[-1][7]
 
-
+                price = self.env._get_state(tick)['original_close']
 
                 if price > current_price:
                     # good
@@ -122,7 +124,6 @@ class Algorithm:
 
 
         del current_price
-
 
         return step_reward * 100
 
@@ -196,7 +197,7 @@ class Algorithm:
 
         del current_price
 
-        return step_reward * 100
+        return step_reward * 101
 
     def hold_reward(self):
         # check for uptrend only if we have a previous buy
@@ -208,16 +209,16 @@ class Algorithm:
 
 
         if is_up and ipb:
-            return 20
+            return 50
 
         elif is_down and ipb:
-            return -20
+            return -50
 
         elif is_up and not ipb:
-            return -20
+            return -50
 
         elif is_down and not ipb:
-            return 20
+            return 50
 
         return 0
 

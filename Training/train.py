@@ -74,7 +74,7 @@ class Train():
 
             i += 1
 
-        if amount_of_dirs < 10:
+        if amount_of_dirs <= 10:
             amount_of_dirs = "0" + str(amount_of_dirs + 1)
         else:
             amount_of_dirs = str(amount_of_dirs + 1)
@@ -119,6 +119,7 @@ class Train():
                     feature_count = array_state.shape[1]
                     q_values = self._agent.predict_q(array_state.reshape(1, self.env_look_back_window, feature_count), 1)
                     action = ActionSpace(np.argmax(q_values))
+
 
                 next_state, reward, done, info = self._env.step(action.value)
 

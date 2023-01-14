@@ -83,6 +83,7 @@ class CryptoEnvironment(gym.Env):
         reward = 0
 
 
+
         if action == ActionSpace.BUY.value:
             self._previous_buy_tick = self._tick
             self._previous_action_buy = True
