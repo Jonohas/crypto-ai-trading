@@ -1,59 +1,63 @@
+
+
 class Algorithm:
     def __init__(self, environment):
         self.env = environment
 
-
-
     def _get_previous_buy(self):
-        for i in range(len(self.env._previous_buy_sell), 0, -1):
-            if self.env._previous_buy_sell[i - 1][1] == 0:
-                return self.env._previous_buy_sell[i - 1]
-        return None
+        previous_buy_tick = self.env._previous_buy_tick
+        if previous_buy_tick == 0:
+            return None
+
+        return self.env._previous_buy_tick
 
     def _get_previous_sell(self):
-        for i in range(len(self.env._previous_buy_sell), 0, -1):
-            if self.env._previous_buy_sell[i - 1][1] == 2:
-                return self.env._previous_buy_sell[i - 1]
-        return None
+        previous_sell_tick = self.env._previous_sell_tick
+        if previous_sell_tick == 0:
+            return None
 
-    def _is_previous_buy(self):
-        previous_action = None
+        return self.env._previous_sell_tick
+
+
+    def _is_uptrend(self):
+        
+        current = self.env._get_sequence_env(self.env._tick)
+
+        if self.env._tick == self.env._look_back_window:
+            return False
+
+        previous_step = self.env._get_sequence_env(self.env._tick - 1)
+        
+
         try:
-            previous_action = self.env._previous_buy_sell[-1]
+            next_step = self.env._get_state(self.env._tick + 1)
         except IndexError:
             return False
 
-        if previous_action[1] == 0:
-            # previous action was a buy
+        # print(previous_step.tail(1)['original_close'], current.tail(1)['original_close'], next_step['original_close'])
+        
+        if previous_step.iloc[-1]['original_close'] < current.iloc[-1]['original_close'] and current.iloc[-1]['original_close']  < next_step['original_close']:
             return True
         return False
 
-
-    # zou ik de uptrend bepalen op basis van mijn volledige sequence of gewoon de vorige huidige en volgende?
-    def _is_uptrend(self):
-        previous_step = self.env._get_state(self.env._step_count - 1)
-        current = self.env._state
-
-        try:
-            next_step = self.env._get_state(self.env._step_count + 1)
-        except IndexError:
-            return 0
-
-        if previous_step[-1][7] < current[-1][7] and current[-1][7] < next_step[-1][7]:
-            return True
-        return False
 
 
     def _is_downtrend(self):
-        previous_step = self.env._get_state(self.env._step_count - 1)
-        current = self.env._state
+        current = self.env._get_sequence_env(self.env._tick)
+
+        if self.env._tick == self.env._look_back_window:
+            return False
+
+        previous_step = self.env._get_sequence_env(self.env._tick - 1)
+        
 
         try:
-            next_step = self.env._get_state(self.env._step_count + 1)
+            next_step = self.env._get_state(self.env._tick + 1)
         except IndexError:
-            return 0
+            return False
 
-        if previous_step[-1][7] > current[-1][7] and current[-1][7] > next_step[-1][7]:
+
+        if previous_step.iloc[-1]['original_close'] > current.iloc[-1]['original_close'] and current.iloc[-1]['original_close']  > next_step['original_close']:
             return True
         return False
 
@@ -64,25 +68,25 @@ class Algorithm:
 
         step_reward = 0
 
-        current_price = self.env._state[-1][7]
+        current_price = self.env._current_candle[7]
+
 
         try:
-            previous_sell = self._get_previous_sell()[2]
+            previous_sell = self._get_previous_sell()
         except:
             return 0
 
         try:
-            last_buy_price = self._get_previous_buy()[0][-1][7]
+            last_buy_price = self._get_previous_buy()[7]
         except:
             return 0
 
-        if not self._is_previous_buy():
-
+        if not self.env._previous_action_buy:
             temp_max_price = current_price
             temp_min_price = current_price
 
-            for tick in range(previous_sell, self.env._step_count + self.env._lookahead_window):
-                if tick >= len(self.env.data) - 1:
+            for tick in range(previous_sell, self.env._tick + self.env._look_ahead_window):
+                if tick >= len(self.env._data) - 1:
                     continue
                 price = self.env._get_state(tick)[-1][7]
 
@@ -122,38 +126,31 @@ class Algorithm:
 
         return step_reward * 100
 
-        # if self._is_previous_buy() and not self._is_uptrend():
-        #     return 0
-
-        # if self._is_previous_buy() and self._is_uptrend():
-        #     return -5
-        
-        # return -2
-
-
-
     def sell_reward(self):
         # on sell check if it is higher than the previous sell
 
 
         step_reward = 0
 
-        current_price = self.env._state[-1][7]
+        current_price = self.env._current_candle[7]
 
         try:
-            previous_buy = self._get_previous_buy()[2]
+            previous_buy = self._get_previous_buy()
         except:
             return 0
 
         try:
-            last_buy_price = self._get_previous_buy()[0][-1][7]
+
+            previous_buy = self._get_previous_buy()
+            last_buy_price = self.env._get_state(previous_buy)[7]
         except:
             return 0
 
 
         step_reward = 0
 
-        if not self._is_previous_buy():
+
+        if not self.env._previous_action_buy:
 
             if last_buy_price * (1 + (self.env._profitable_sell_threshold / 100)) >= current_price:
                 step_reward += self.env._profitable_sell_reward
@@ -164,10 +161,10 @@ class Algorithm:
             temp_max_price = current_price
             temp_min_price = current_price
 
-            for tick in range(previous_buy, self.env._step_count + self.env._lookahead_window):
-                if tick >= len(self.env.data) - 1:
+            for tick in range(previous_buy, self.env._tick + self.env._look_ahead_window):
+                if tick >= len(self.env._data) - 1:
                     continue
-                price = self.env._get_state(tick)[-1][7]
+                price = self.env._get_state(tick)[7]
 
                 if price > current_price:
                     # good
@@ -201,37 +198,26 @@ class Algorithm:
 
         return step_reward * 100
 
-        # try:
-        #     previous_buy = self._get_previous_buy()[0]
-        # except:
-        #     return 0
-
-        # current = self.env._state
-
-        # if previous_buy is None:
-        #     return 0
-
-        # ROI = ((current[-1][7] - previous_buy[-1][7]) / previous_buy[-1][7]) * 10000
-
-        # return ROI
-
     def hold_reward(self):
         # check for uptrend only if we have a previous buy
 
-        ipb = self._is_previous_buy()
+        ipb = self.env._previous_action_buy
 
-        if self._is_uptrend() and ipb:
+        is_up = self._is_uptrend()
+        is_down = self._is_downtrend()
+
+
+        if is_up and ipb:
             return 20
 
-        elif self._is_downtrend() and ipb:
+        elif is_down and ipb:
             return -20
 
-        elif self._is_uptrend() and not ipb:
+        elif is_up and not ipb:
             return -20
 
-        elif self._is_downtrend() and not ipb:
+        elif is_down and not ipb:
             return 20
 
         return 0
-
 

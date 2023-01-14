@@ -4,6 +4,6 @@ Preprocessing/output
 logs/
 Results/
 Models/
-*.pyc
+.env
 
-__pycache__/
+**/__pycache__/

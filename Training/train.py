@@ -1,183 +1,198 @@
-from CryptoEnv import CryptoEnvironment, ActionSpace
-from CryptoAgent import CryptoAgent
+# get values from environment variables
+
+# Path: Training/train.py
+
 import pandas as pd
 import numpy as np
+import os
+import sys
+from dotenv import load_dotenv
+from tqdm import tqdm
 import random
 import time
-from tqdm import tqdm
-import matplotlib.pyplot as plt
 
-# import os
-# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # or any {'0', '1', '2'}
+from CryptoEnvironment import CryptoEnvironment
+from CryptoAgent import CryptoAgent
+from ActionSpace import ActionSpace
 
-original_items = [0,6,7,8,9,10]
+load_dotenv()
 
-def create_lookback_batches(data, lookback_window=20):
-
-    # create sequences from dataframe
-    sequences = []
-    for i in range(lookback_window + 1, len(data)):
-        sequences.append(data[i - lookback_window:i])
-
-    return np.array(sequences)
-
-
-
-def create_reward_history_file(timestamp, columns):
-    filename = f"../Results/reward_history_{timestamp}.csv"
-    file = open(filename, 'w+')
-    i = 0
-    with file as f:
-        for col in columns:
-            if i != 0:
-                f.write(",")
-            f.write(col)
-            i += 1
-
-        f.write("\n")
-    return filename
-
-def write_to_file(filename, data):
-    i = 0
-    with open(filename, "a") as f:
-        for item in data:
-            if i != 0:
-                f.write(",")
-            f.write(str(item))
-            i += 1
-        f.write("\n")
-
-
-# Receives an index and returns the data for the training and for the environment
-def get_train_env_data(data):
-    item = pd.DataFrame(data)
-    return item[original_items], item.drop(original_items, axis=1)
-
-def main():
-    LOOPBACK_WINDOW = 100
-    INPUT_SAMPLE_COUNT = 10
-    BATCH_SIZE = 64
-
-    EPSILON = 0.98 # Exploration rate
-    EPSILON_DECAY = 0.992 # Decay rate
-    DISCOUNT = 0.90
-    MIN_EPSILON = 0.01 # Minimum exploration rate
-    UPDATE_TARGET_INTERVAL = 500
-    SAVE_MODEL_INTERVAL = 20
-
-    df = pd.read_csv("../Data/dataset/VETUSDT.csv")
-    sequences = create_lookback_batches(df[:], LOOPBACK_WINDOW)
-
-
-    env = CryptoEnvironment(sequences, LOOPBACK_WINDOW)
-    agent = CryptoAgent(input_shape=(LOOPBACK_WINDOW, 17))
-    state = env.reset()
-
-    update_counter = 0
-    reward_history = []
-    average_reward = 0
-
-
-    progressbar = tqdm(range(400))
-
-    timestamp = time.strftime("%Y%m%d-%H%M%S")
-
-    filename = create_reward_history_file(timestamp, ['average_reward', 'epsilon', 'balance', 'episode', 'time_train', 'steps'])
-
-    for episode in progressbar:
-        episode_reward = 0
-        step_count = 0
-
-        state = env.reset()
-
-        done = False
-
-        while not done:
-            r = random.random()
-            progressbar.set_description(f"Episode: {episode}, Step: {step_count}, Epsilon: {EPSILON}")
-
-            if (r <= EPSILON):
-                action = random.choice(list(ActionSpace))
-
-                
-            else:
-                _, data_for_nn = get_train_env_data(state)
-                array_state = np.asarray(data_for_nn)
-                feature_count = array_state.shape[1]
-                start_time_prediction = time.time()
-                q_values = agent.predict_network_q(array_state.reshape(1, LOOPBACK_WINDOW,feature_count))
-                end_time_prediction = time.time()
-                time_predict  = end_time_prediction - start_time_prediction
-                action = ActionSpace(np.argmax(q_values))
-
-
-            new_state, reward, done, info = env.step(action.value)
-
-            step_count += 1
-            step = (state, action.value, reward, new_state, done)
-            
-            agent.append_to_replay_memory(step)
-            state = new_state
-            episode_reward += reward
+class Train():
+    def __init__(self, data_path):
+        self._data = pd.read_csv(data_path)
+        self._training_data = self._data.drop(['original_open', 'original_close', 'original_high', 'original_low', 'original_volume', 'event_time'], axis=1)
         
-        reward_history.append(episode_reward)
-        average_reward = np.mean(reward_history)
+        self._create_log_dir()
+        self.env_risk = float(os.getenv("ENVIRONMENT_RISK_FACTOR"))
+        self.env_initial_balance = float(os.getenv("ENVIRONMENT_INITIAL_BALANCE"))
+        self.env_initial_coin_amount = float(os.getenv("ENVIRONMENT_INITIAL_COIN_AMOUNT"))
+        self.env_look_back_window = int(os.getenv("ENVIRONMENT_LOOK_BACK_WINDOW"))
+        self.env_look_ahead_window = int(os.getenv("ENVIRONMENT_LOOK_AHEAD_WINDOW"))
+        self.env_profitable_sell_threshhold = float(os.getenv("ENVIRONMENT_PROFITABLE_SELL_THRESHHOLD"))
+        self.env_profitable_sell_reward = float(os.getenv("ENVIRONMENT_PROFITABLE_SELL_REWARD"))
 
+        self.batch_size = int(os.getenv("BATCH_SIZE"))
+        self.epochs = int(os.getenv("EPOCHS"))
+        self.learning_rate = float(os.getenv("LEARNING_RATE"))
+        self.discount = float(os.getenv("DISCOUNT"))
+        self.epsilon = float(os.getenv("EPSILON"))
+        self.epsilon_decay = float(os.getenv("EPSILON_DECAY"))
+        self.min_epsilon = float(os.getenv("MIN_EPSILON"))
+        self.update_target_interval = int(os.getenv("UPDATE_TARGET_INTERVAL"))
+        self.save_model_interval = int(os.getenv("SAVE_MODEL_INTERVAL"))
 
-        if len(agent.memory) > BATCH_SIZE:
-            EPSILON = EPSILON_DECAY * EPSILON
-            if EPSILON < MIN_EPSILON:
-                EPSILON = MIN_EPSILON
+        self.replay_buffer_capacity = int(os.getenv("REPLAY_BUFFER_CAPACITY"))
 
-            minibatch_samples = agent.sample_from_replay_memory(BATCH_SIZE)
+        self._verbose = bool(os.getenv("VERBOSE"))
 
-            mini_batch = []
-            for item in minibatch_samples:
-                mini_batch.append((get_train_env_data(item[0])[1], item[1], item[2], get_train_env_data(item[3])[1], item[4]))
+        self.input_shape = (self.env_look_back_window, self._data.shape[1])
+        self.training_input_shape = (self.env_look_back_window, self._training_data.shape[1])
 
-            mini_batch_states = np.asarray(list(zip(*mini_batch))[0],dtype=float)
-            mini_batch_actions = np.asarray(list(zip(*mini_batch))[1], dtype = int)
-            mini_batch_rewards = np.asarray(list(zip(*mini_batch))[2], dtype = float)
-            mini_batch_next_state = np.asarray(list(zip(*mini_batch))[3],dtype=float)
-            mini_batch_done = np.asarray(list(zip(*mini_batch))[4],dtype=bool)
-            
-            current_state_q_values = agent.predict_network_q(mini_batch_states)
-            y = current_state_q_values
+        arguments={
+            'risk':  self.env_risk,
+            'initial_balance':  self.env_initial_balance,
+            'initial_coin_amount':  self.env_initial_coin_amount,
+            'look_back_window':  self.env_look_back_window,
+            'look_ahead_window':  self.env_look_ahead_window,
+            'profitable_sell_threshhold':  self.env_profitable_sell_threshhold,
+            'profitable_sell_reward':  self.env_profitable_sell_reward
+        }
 
-            next_state_q_values = agent.predict_network_target(mini_batch_next_state)
+        self._env = CryptoEnvironment(self._data, self._training_data, arguments, self.input_shape, self.log_dir, verbose=self._verbose)
+        self._agent = CryptoAgent(self.replay_buffer_capacity, self.training_input_shape , self.log_dir, verbose=self._verbose)
 
-            max_q_next_state = np.max(next_state_q_values, axis=1)
+    def _create_log_dir(self):
+        prefix = "train_"
+        log_dir = os.getenv("SAVE_PATH")
 
-            for i in range(BATCH_SIZE):
-                if mini_batch_done[i]:
-                    y[i, mini_batch_actions[i]] = mini_batch_rewards[i]
-                else:
-                    y[i, mini_batch_actions[i]] = mini_batch_rewards[i] + DISCOUNT * max_q_next_state[i]
+        amount_of_dirs = 0
+        i = 0
 
-            start_time_fit_q = time.time()
-            agent.fit_network_q(mini_batch_states, y, batch_size=BATCH_SIZE)
-            end_time_fit_q = time.time()
-            time_train  = end_time_fit_q - start_time_fit_q
+        for root, dirs, files in os.walk(log_dir):
+            if i == 0:
+                amount_of_dirs = len(dirs)
 
+            i += 1
+
+        if amount_of_dirs < 10:
+            amount_of_dirs = "0" + str(amount_of_dirs + 1)
         else:
-            env.render()
-            continue
-        if update_counter == UPDATE_TARGET_INTERVAL:
-            agent.update_target_network()
-            update_counter = 0
-        update_counter += 1
+            amount_of_dirs = str(amount_of_dirs + 1)
+
         
-        reward_history.append(episode_reward)
+            
+        
+        log_dir = os.path.join(log_dir, prefix + str(amount_of_dirs))
+            
 
-        write_to_file(filename, [average_reward, EPSILON, episode, time_train, step_count])
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
 
-        if episode % SAVE_MODEL_INTERVAL == 0:
-            agent.model_q.save(f"../Models/model_{timestamp}_{episode}.h5")
+        self.log_dir = log_dir
 
-    # save last model to Models folder with timestamp
 
-    agent.model_q.save(f"../Models/model_{timestamp}_final.h5")
+    def train(self):
+        update_counter = 0
+        reward_history = []
+        average_reward_history = []
+        average_reward = 0
+
+        progress_bar = tqdm(range(self.epochs), desc="Epochs", unit="epoch")
+
+        for epoch in progress_bar:
+            episode_reward = 0
+            step_count = 0
+            done = False
+
+            state = self._env.reset()
+
+            while not done:
+                r = random.random()
+                progress_bar.set_description(f"Episode: {epoch}, Step: {step_count}, Epsilon: {self.epsilon}")
+
+                if r <= self.epsilon:
+                    action = self._env.random_action()
+
+                else:
+                    data_for_nn = self._env._get_sequence(self._env._tick)
+                    array_state = np.asarray(data_for_nn)
+                    feature_count = array_state.shape[1]
+                    q_values = self._agent.predict_q(array_state.reshape(1, self.env_look_back_window, feature_count), 1)
+                    action = ActionSpace(np.argmax(q_values))
+
+                next_state, reward, done, info = self._env.step(action.value)
+
+                step_count += 1
+
+                training_state = self._env._get_sequence(self._env._tick)
+                training_next_state = self._env._get_sequence(self._env._tick + 1)
+                step = (training_state, action.value, reward, training_next_state, done)
+
+                self._agent.add_to_memory(step)
+                state = next_state
+                episode_reward += reward
+
+            reward_history.append(episode_reward)
+            average_reward = np.mean(reward_history)
+
+            if len(self._agent.memory) > self.batch_size:
+                self.epsilon = self.epsilon_decay * self.epsilon
+                if self.epsilon < self.min_epsilon:
+                    self.epsilon = self.min_epsilon
+
+                minibatch_samples = self._agent.sample_memory(self.batch_size)
+
+                mini_batch = []
+
+                for item in minibatch_samples:
+                    mini_batch.append((item[0], item[1], item[2], item[3], item[4]))
+
+                mini_batch_states = np.asarray(list(zip(*mini_batch))[0],dtype=float)
+                mini_batch_actions = np.asarray(list(zip(*mini_batch))[1], dtype=int)
+                mini_batch_rewards = np.asarray(list(zip(*mini_batch))[2],dtype=float)
+                mini_batch_next_states = np.asarray(list(zip(*mini_batch))[3],dtype=float)
+                mini_batch_done = np.asarray(list(zip(*mini_batch))[4],dtype=bool)
+
+                current_state_q_values = self._agent.predict_q(mini_batch_states, batch_size=self.batch_size)
+                y = current_state_q_values
+
+                next_state_q_values = self._agent.predict_target(mini_batch_next_states, batch_size=self.batch_size)
+
+                max_q_next_state = np.max(next_state_q_values, axis=1)
+                for i in range(self.batch_size):
+                    if mini_batch_done[i]:
+                        y[i, mini_batch_actions[i]] = mini_batch_rewards[i]
+                    else:
+                        y[i, mini_batch_actions[i]] = mini_batch_rewards[i] + self.discount * max_q_next_state[i]
+
+                self._agent.fit_q(mini_batch_states, y, batch_size=self.batch_size)
+
+            else:
+                self._env.render()
+                continue
+            if update_counter == self.update_target_interval:
+                self._agent.update_target()
+                update_counter = 0
+            update_counter += 1
+            
+            reward_history.append(episode_reward)
+
+            # write_to_file(filename, [average_reward, EPSILON, episode, time_train, step_count])
+
+            if epoch % self.save_model_interval == 0:
+                self._agent.save_model(epoch)
+
+        self._agent.save_model('final')
+
 
 
 if __name__ == "__main__":
-    main()
+    data_path = os.getenv("DATA_PATH")
+
+
+
+
+    train = Train(data_path)
+
+    
+    train.train()
