@@ -20,6 +20,11 @@ class Algorithm:
 
 
     def _is_uptrend(self):
+
+        # check if last 100 to next 50 candles are uptrend
+
+        # perdiod_candles = self.env._data.iloc[self.env._tick - 100, self.env._tick + 50]
+        # period_mean = perdiod_candles['original_close'].mean()
         
         current = self.env._get_sequence_env(self.env._tick)
 
@@ -157,7 +162,7 @@ class Algorithm:
                 step_reward += self.env._profitable_sell_reward
                 
             else:
-                step_reward += self.env._non_profitable_sell_punishment
+                step_reward += self.env._none_profitable_sell_reward
 
             temp_max_price = current_price
             temp_min_price = current_price
@@ -197,7 +202,7 @@ class Algorithm:
 
         del current_price
 
-        return step_reward * 101
+        return step_reward * 140
 
     def hold_reward(self):
         # check for uptrend only if we have a previous buy
@@ -212,13 +217,15 @@ class Algorithm:
             return 50
 
         elif is_down and ipb:
-            return -50
+            return -70
 
         elif is_up and not ipb:
-            return -50
+            return -70
 
         elif is_down and not ipb:
             return 50
 
         return 0
+
+    
 

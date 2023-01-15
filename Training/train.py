@@ -61,28 +61,31 @@ class Train():
         self._env = CryptoEnvironment(self._data, self._training_data, arguments, self.input_shape, self.log_dir, verbose=self._verbose)
         self._agent = CryptoAgent(self.replay_buffer_capacity, self.training_input_shape , self.log_dir, verbose=self._verbose)
 
+        self.write_to_log(self.log_dir + "/reward_history.csv", ['episode', 'reward', 'average_reward', 'epsilon', 'step_count', 'profit'])
+
+
+
+
+    def write_to_log(self, path, items):
+        i = 0
+        with open(path, "a+") as f:
+            for item in items:
+                if i != 0:
+                    f.write(",")
+                f.write(f"{item}")
+                i += 1
+
+            f.write("\n")
+            
+
     def _create_log_dir(self):
-        prefix = "train_"
         log_dir = os.getenv("SAVE_PATH")
 
-        amount_of_dirs = 0
-        i = 0
+        timestamp = time.time()
+        string_time = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime(timestamp))
 
-        for root, dirs, files in os.walk(log_dir):
-            if i == 0:
-                amount_of_dirs = len(dirs)
 
-            i += 1
-
-        if amount_of_dirs <= 10:
-            amount_of_dirs = "0" + str(amount_of_dirs + 1)
-        else:
-            amount_of_dirs = str(amount_of_dirs + 1)
-
-        
-            
-        
-        log_dir = os.path.join(log_dir, prefix + str(amount_of_dirs))
+        log_dir = os.path.join(log_dir, str(string_time))
             
 
         if not os.path.exists(log_dir):
@@ -97,9 +100,9 @@ class Train():
         average_reward_history = []
         average_reward = 0
 
-        progress_bar = tqdm(range(self.epochs), desc="Epochs", unit="epoch")
+        progress_bar = tqdm(range(self.epochs), desc="Episodes", unit="episodes")
 
-        for epoch in progress_bar:
+        for episode in progress_bar:
             episode_reward = 0
             step_count = 0
             done = False
@@ -108,7 +111,7 @@ class Train():
 
             while not done:
                 r = random.random()
-                progress_bar.set_description(f"Episode: {epoch}, Step: {step_count}, Epsilon: {self.epsilon}")
+                progress_bar.set_description(f"Episode: {episode}, Step: {step_count}, Epsilon: {self.epsilon}")
 
                 if r <= self.epsilon:
                     action = self._env.random_action()
@@ -180,8 +183,10 @@ class Train():
 
             # write_to_file(filename, [average_reward, EPSILON, episode, time_train, step_count])
 
-            if epoch % self.save_model_interval == 0:
-                self._agent.save_model(epoch)
+            if episode % self.save_model_interval == 0:
+                self._agent.save_model(episode)
+
+            self.write_to_log(self.log_dir + "/reward_history.csv", [episode, episode_reward, average_reward, self.epsilon, step_count, self._env._total_profit])
 
         self._agent.save_model('final')
 
