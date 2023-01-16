@@ -161,10 +161,11 @@ class CryptoEnvironment(gym.Env):
             
     def _sell(self):
         self._consecutive_buy_tick = 0
+        prev_account_balance = self._account_balance
 
         self._account_balance += self._coin_amount * self._current_candle[7]
         # calculate profit
-        self._profit = self._account_balance - self._default_arguments["initial_balance"]
+        self._profit = prev_account_balance - self._account_balance
         self._coin_amount = 0
 
         self._consecutive_sell_tick += 1
