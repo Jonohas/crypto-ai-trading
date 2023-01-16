@@ -83,6 +83,9 @@ class CryptoEnvironment(gym.Env):
         self._account_balance = self._default_arguments["initial_balance"]
         self._coin_amount = self._default_arguments["initial_coin_amount"]
 
+        self._consecutive_buy_tick = 0
+        self._consecutive_sell_tick = 0
+
         self._profitable_sell_threshold = self._default_arguments["profitable_sell_threshhold"] # 1% profit
         self._profitable_sell_reward = self._default_arguments["profitable_sell_reward"]
         self._none_profitable_sell_reward = -self._profitable_sell_reward
@@ -95,23 +98,23 @@ class CryptoEnvironment(gym.Env):
     def step(self, action):
         reward = 0
 
+        done = False
 
-
-
-        if action == ActionSpace.BUY.value and self._consecutive_buy_tick >= self._consecutive_threshold:
+        if action == ActionSpace.BUY.value and self._consecutive_buy_tick <= self._consecutive_threshold:
             reward += self._buy()
             self._previous_buy_tick = self._tick
             self._previous_action_buy = True
-        elif action == ActionSpace.BUY.value and self._consecutive_buy_tick < self._consecutive_threshold:
-            reward += -100
+        elif action == ActionSpace.BUY.value and self._consecutive_buy_tick > self._consecutive_threshold:
+            done = True
 
-        if action == ActionSpace.SELL.value and self._consecutive_sell_tick >= self._consecutive_threshold:
+        if action == ActionSpace.SELL.value and self._consecutive_sell_tick <= self._consecutive_threshold:
             # if coin amount is 0, we can't sell
             reward += self._sell()
             self._previous_sell_tick = self._tick
             self._previous_action_buy = False
-        elif action == ActionSpace.SELL.value and self._consecutive_sell_tick < self._consecutive_threshold:
-            reward += -100
+
+        elif action == ActionSpace.SELL.value and self._consecutive_sell_tick > self._consecutive_threshold:
+            done = True
 
         if action == ActionSpace.HOLD.value:
             reward += self._hold()
@@ -123,29 +126,29 @@ class CryptoEnvironment(gym.Env):
         }
 
         if (self._coin_amount * self._current_candle[7] < 20) and self._account_balance < 40:
-            return self._current_candle, reward, True, info
+            done = True
         
         if self._account_balance < 20 and self._coin_amount == 0:
-            return self._current_candle, reward, True, info
+            done = True
 
         if self._account_balance < 20:
-            return self._current_candle, reward, True, info
+            done = True
 
-        if self._tick >= self._step_limit:
-            return self._current_candle, reward, True, info
+        if self._tick >= self._tick + self._step_limit:
+            done = True
 
         
         try:
             next_state = self._get_state(self._tick + 1)
 
         except IndexError:
-            return self._current_candle, reward, True, info
+            done = True
 
         self._current_candle = next_state
 
 
         self._tick += 1
-        return next_state, reward, False, info
+        return next_state, reward, done, info
 
     def _buy(self):
         self._consecutive_sell_tick = 0
