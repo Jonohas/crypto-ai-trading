@@ -8,17 +8,24 @@ import tensorflow as tf
 import gc
 
 class CryptoModel:
-    def __init__(self, input_shape, log_dir):
+    def __init__(self, input_shape, root ,log_dir, model_arguments):
         self._verbose = False
         self.log_dir = log_dir
         self.input_shape = input_shape
-        self.model = self._create_model()
+        self._root = root
+
+        self._model_arguments = model_arguments
+
+        if self._model_arguments != {} and self._model_arguments['use_previous_model']:
+            self.load_model(self._model_arguments['previous_model_path'], self._model_arguments['previous_model_index'])
+        else:
+            self.model = self._create_model()
 
 
     def _create_model(self):
         model = keras.Sequential()
 
-        optimizer = Adam(learning_rate=0.002)
+        optimizer = Adam()
 
         model.add(layers.LSTM(200, input_shape=self.input_shape, return_sequences=True))
         model.add(layers.Dropout(0.2))
@@ -37,13 +44,14 @@ class CryptoModel:
 
     def save_model(self, index):
         log_dir = self.log_dir + '/models/'
-        
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
+ 
         self.model.save(log_dir + f'/model_{index}.h5')
 
-    def load_model(self):
-        pass
+    def load_model(self, path, index):
+        dir = os.path.join(self._root, path)
+
+        log_dir = dir + '/models/'
+        self.model = keras.models.load_model(log_dir + f'model_{index}.h5')
 
     def train(self, X, y, batch_size):
         self.model.fit(X, y, batch_size=batch_size, verbose=self._verbose)

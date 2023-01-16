@@ -5,13 +5,16 @@ import random
 
 
 import tensorflow as tf
-# set memory growth to true
-physical_devices = tf.config.experimental.list_physical_devices('GPU')
-tf.config.experimental.set_memory_growth(physical_devices[0], True)
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+  for gpu in gpus:
+    tf.config.experimental.set_memory_growth(gpu, True)
+else:
+  print("No GPU device found")
 
 
 class CryptoAgent:
-    def __init__(self, replay_buffer_capacity, input_shape, log_dir, verbose=False):
+    def __init__(self, replay_buffer_capacity, input_shape, root, log_dir, model_arguments, verbose=False):
         self.capacity = replay_buffer_capacity
         self.memory = deque(maxlen=self.capacity)
         self.populated = False
@@ -21,8 +24,10 @@ class CryptoAgent:
 
         self._verbose = verbose
 
-        self._model_q = CryptoModel(self._input_shape, self.log_dir)
-        self._model_target = CryptoModel(self._input_shape, self.log_dir)
+        self._model_arguments = model_arguments
+
+        self._model_q = CryptoModel(self._input_shape, root, self.log_dir, model_arguments)
+        self._model_target = CryptoModel(self._input_shape, root, self.log_dir, {})
 
     def sample_memory(self, batch_size):
         if batch_size > len(self.memory):

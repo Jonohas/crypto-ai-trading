@@ -20,12 +20,17 @@ load_dotenv()
 class Train():
     def __init__(self, data_path):
         self._data = pd.read_csv(data_path)
+
+        self.root_dir = os.path.join('../', 'Results', 'progress')
+        # cut off random amount of rows from the first half
+        self._data = self._data.iloc[random.randint(0, int(self._data.shape[0] / 2)):]
         self._training_data = self._data.drop(['original_open', 'original_close', 'original_high', 'original_low', 'original_volume', 'event_time'], axis=1)
         
         self._create_log_dir()
         self.env_risk = float(os.getenv("ENVIRONMENT_RISK_FACTOR"))
         self.env_initial_balance = float(os.getenv("ENVIRONMENT_INITIAL_BALANCE"))
         self.env_initial_coin_amount = float(os.getenv("ENVIRONMENT_INITIAL_COIN_AMOUNT"))
+        self.env_sequence_length = int(os.getenv("ENVIRONMENT_SEQUENCE_LENGTH"))
         self.env_look_back_window = int(os.getenv("ENVIRONMENT_LOOK_BACK_WINDOW"))
         self.env_look_ahead_window = int(os.getenv("ENVIRONMENT_LOOK_AHEAD_WINDOW"))
         self.env_profitable_sell_threshhold = float(os.getenv("ENVIRONMENT_PROFITABLE_SELL_THRESHHOLD"))
@@ -41,30 +46,45 @@ class Train():
         self.update_target_interval = int(os.getenv("UPDATE_TARGET_INTERVAL"))
         self.save_model_interval = int(os.getenv("SAVE_MODEL_INTERVAL"))
 
+        self.step_limit = int(os.getenv("STEP_LIMIT"))
+
         self.replay_buffer_capacity = int(os.getenv("REPLAY_BUFFER_CAPACITY"))
 
         self._verbose = bool(os.getenv("VERBOSE"))
 
-        self.input_shape = (self.env_look_back_window, self._data.shape[1])
-        self.training_input_shape = (self.env_look_back_window, self._training_data.shape[1])
+        self.input_shape = (self.env_sequence_length, self._data.shape[1])
+        self.training_input_shape = (self.env_sequence_length, self._training_data.shape[1])
+
+        self._use_previous_model = bool(os.getenv("USE_PREVIOUS_MODEL"))
+        self._previous_model_path = os.getenv("LOAD_MODEL_PATH")
+        self._previous_model_index = os.getenv("LOAD_MODEL_INDEX")
+
+        self.env_consecutive_threshold = int(os.getenv("ENVIRONMENT_CONSECUTIVE_THRESHOLD"))
+
+        model_arguments = {
+            'previous_model_path': self._previous_model_path,
+            'previous_model_index': self._previous_model_index,
+            'use_previous_model': self._use_previous_model,
+        }
 
         arguments={
             'risk':  self.env_risk,
             'initial_balance':  self.env_initial_balance,
             'initial_coin_amount':  self.env_initial_coin_amount,
+            'sequence_length':  self.env_sequence_length,
             'look_back_window':  self.env_look_back_window,
             'look_ahead_window':  self.env_look_ahead_window,
             'profitable_sell_threshhold':  self.env_profitable_sell_threshhold,
-            'profitable_sell_reward':  self.env_profitable_sell_reward
+            'profitable_sell_reward':  self.env_profitable_sell_reward,
+            'step_limit': self.step_limit,
+            'consecutive_threshold': self.env_consecutive_threshold,
         }
 
         self._env = CryptoEnvironment(self._data, self._training_data, arguments, self.input_shape, self.log_dir, verbose=self._verbose)
-        self._agent = CryptoAgent(self.replay_buffer_capacity, self.training_input_shape , self.log_dir, verbose=self._verbose)
+        self._agent = CryptoAgent(self.replay_buffer_capacity, self.training_input_shape ,self.root_dir,  self.log_dir, model_arguments, verbose=self._verbose)
 
         self.write_to_log(self.log_dir + "/reward_history.csv", ['episode', 'reward', 'average_reward', 'epsilon', 'step_count', 'profit'])
-
-
-
+        
 
     def write_to_log(self, path, items):
         i = 0
@@ -76,20 +96,26 @@ class Train():
                 i += 1
 
             f.write("\n")
-            
 
     def _create_log_dir(self):
         log_dir = os.getenv("SAVE_PATH")
 
         timestamp = time.time()
         string_time = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime(timestamp))
-
-
         log_dir = os.path.join(log_dir, str(string_time))
             
 
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
+
+        if not os.path.exists(log_dir + "/episodes"):
+            os.makedirs(log_dir + "/episodes")
+
+        if not os.path.exists(log_dir + "/models"):
+            os.makedirs(log_dir + "/models")
+
+        if not os.path.exists(log_dir + "/images"):
+            os.makedirs(log_dir + "/images")
 
         self.log_dir = log_dir
 
@@ -103,6 +129,15 @@ class Train():
         progress_bar = tqdm(range(self.epochs), desc="Episodes", unit="episodes")
 
         for episode in progress_bar:
+            episode_string = str(episode)
+            if episode < 10:
+                episode_string = "0" + episode_string
+            if episode < 100:
+                episode_string = "0" + episode_string
+
+            episode_history_path = self.log_dir + f"/episodes/{episode_string}_episode_history.csv"
+
+            self.write_to_log(episode_history_path, ["step", "reward", "profit", "balance", "coin_amount", "action", "random"])
             episode_reward = 0
             step_count = 0
             done = False
@@ -113,20 +148,23 @@ class Train():
                 r = random.random()
                 progress_bar.set_description(f"Episode: {episode}, Step: {step_count}, Epsilon: {self.epsilon}")
 
+                is_random_action = False
+
                 if r <= self.epsilon:
                     action = self._env.random_action()
+                    is_random_action = True
 
                 else:
                     data_for_nn = self._env._get_sequence(self._env._tick)
                     array_state = np.asarray(data_for_nn)
                     feature_count = array_state.shape[1]
-                    q_values = self._agent.predict_q(array_state.reshape(1, self.env_look_back_window, feature_count), 1)
+                    q_values = self._agent.predict_q(array_state.reshape(1, self.env_sequence_length, feature_count), 1)
                     action = ActionSpace(np.argmax(q_values))
 
 
                 next_state, reward, done, info = self._env.step(action.value)
 
-                step_count += 1
+                
 
                 training_state = self._env._get_sequence(self._env._tick)
                 training_next_state = self._env._get_sequence(self._env._tick + 1)
@@ -135,6 +173,9 @@ class Train():
                 self._agent.add_to_memory(step)
                 state = next_state
                 episode_reward += reward
+
+                self.write_to_log(episode_history_path, [step_count, reward, info["profit"], info["account_balance"], info["coin_amount"], action.value, is_random_action])
+                step_count += 1
 
             reward_history.append(episode_reward)
             average_reward = np.mean(reward_history)
@@ -181,12 +222,11 @@ class Train():
             
             reward_history.append(episode_reward)
 
-            # write_to_file(filename, [average_reward, EPSILON, episode, time_train, step_count])
 
             if episode % self.save_model_interval == 0:
                 self._agent.save_model(episode)
 
-            self.write_to_log(self.log_dir + "/reward_history.csv", [episode, episode_reward, average_reward, self.epsilon, step_count, self._env._total_profit])
+            self.write_to_log(self.log_dir + "/reward_history.csv", [episode, episode_reward / step_count, average_reward, self.epsilon, step_count, self._env._total_profit])
 
         self._agent.save_model('final')
 
@@ -194,11 +234,5 @@ class Train():
 
 if __name__ == "__main__":
     data_path = os.getenv("DATA_PATH")
-
-
-
-
     train = Train(data_path)
-
-    
     train.train()
