@@ -17,7 +17,10 @@ class CryptoModel:
         self._model_arguments = model_arguments
 
         if self._model_arguments != {} and self._model_arguments['use_previous_model']:
-            self.load_model(self._model_arguments['previous_model_path'], self._model_arguments['previous_model_index'])
+            try:
+                self.load_model(self._model_arguments['previous_model_path'], self._model_arguments['previous_model_index'])
+            except:
+                self.model = self._create_model()
         else:
             self.model = self._create_model()
 
