@@ -65,6 +65,7 @@ class Train():
             'previous_model_path': self._previous_model_path,
             'previous_model_index': self._previous_model_index,
             'use_previous_model': self._use_previous_model,
+            'learning_rate': self.learning_rate,
         }
 
         arguments={
