@@ -26,8 +26,8 @@ class CryptoAgent:
 
         self._model_arguments = model_arguments
 
-        self._model_q = CryptoModel(self._input_shape, root, self.log_dir, model_arguments)
-        self._model_target = CryptoModel(self._input_shape, root, self.log_dir, {})
+        self._model_q = CryptoModel(self._input_shape, root, self.log_dir, {'learning_rate': model_arguments['learning_rate'], 'use_previous_model': False})
+        self._model_target = CryptoModel(self._input_shape, root, self.log_dir, model_arguments)
 
     def sample_memory(self, batch_size):
         if batch_size > len(self.memory):
