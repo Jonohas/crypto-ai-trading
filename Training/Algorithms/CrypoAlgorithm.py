@@ -1,10 +1,10 @@
-
+import math
 
 class Algorithm:
     def __init__(self, environment):
         self.env = environment
 
-        self._hold_reward_strength = 0.82
+        self._hold_reward_strength = 0.01
 
     def _get_previous_buy(self):
         previous_buy_tick = self.env._previous_buy_tick
@@ -23,8 +23,8 @@ class Algorithm:
     def _is_peak(self):
         current = self.env._get_sequence_env(self.env._tick)
 
-        previous_steps = self.env._data.iloc[self.env._tick - 10:self.env._tick - 1]
-        following_steps = self.env._data.iloc[self.env._tick + 1 :self.env._tick + 10]
+        previous_steps = self.env._data.iloc[self.env._tick - 3:self.env._tick - 1]
+        following_steps = self.env._data.iloc[self.env._tick + 1 :self.env._tick + 3]
 
         current_price = current.iloc[-1]['original_close']
 
@@ -37,8 +37,8 @@ class Algorithm:
     def _is_valley(self):
         current = self.env._get_sequence_env(self.env._tick)
 
-        previous_steps = self.env._data.iloc[self.env._tick - 10:self.env._tick - 1]
-        following_steps = self.env._data.iloc[self.env._tick + 1 :self.env._tick + 10]
+        previous_steps = self.env._data.iloc[self.env._tick - 3:self.env._tick - 1]
+        following_steps = self.env._data.iloc[self.env._tick + 1 :self.env._tick + 3]
 
         current_price = current.iloc[-1]['original_close']
 
@@ -53,8 +53,7 @@ class Algorithm:
         previous_candles = self.env._data.iloc[self.env._tick - 100:self.env._tick]
         next_candles = self.env._data.iloc[self.env._tick:self.env._tick + 50]
         
-        current = self.env._get_sequence_env(self.env._tick)
-        current_price = current.iloc[-1]['original_close']
+        current_price = self.env._data.iloc[self.env._tick - 20 :self.env._tick + 20]['original_close'].mean()
         previous_mean = previous_candles['original_close'].mean()
         next_mean = next_candles['original_close'].mean()
 
@@ -68,8 +67,7 @@ class Algorithm:
         previous_candles = self.env._data.iloc[self.env._tick - 100:self.env._tick]
         next_candles = self.env._data.iloc[self.env._tick:self.env._tick + 50]
 
-        current = self.env._get_sequence_env(self.env._tick)
-        current_price = current.iloc[-1]['original_close']
+        current_price = self.env._data.iloc[self.env._tick - 20 :self.env._tick + 20]['original_close'].mean()
 
         start_price = previous_candles.iloc[0:5]['original_close'].mean()
         end_price = next_candles.iloc[-5:]['original_close'].mean()
@@ -85,9 +83,8 @@ class Algorithm:
 
         previous_candles = self.env._data.iloc[self.env._tick - 100:self.env._tick]
         next_candles = self.env._data.iloc[self.env._tick:self.env._tick + 50]
-        
-        current = self.env._get_sequence_env(self.env._tick)
-        current_price = current.iloc[-1]['original_close']
+
+        current_price = self.env._data.iloc[self.env._tick - 20 :self.env._tick + 20]['original_close'].mean()
         previous_mean = previous_candles['original_close'].mean()
         next_mean = next_candles['original_close'].mean()
 
@@ -95,137 +92,118 @@ class Algorithm:
             return True
         
         return False
+    
+    def _should_buy(self):
+        if self._is_valley():
+            return True
 
+        return False
+
+    def _should_sell(self):
+        if self._is_peak():
+            return True
+
+        return False
 
     def buy_reward(self):
-        buy_count = self.env._consecutive_buy_tick
+
+        is_previous_action_buy = self.env._previous_action_buy
+
+        buy_action_count = self.env._consecutive_buy_tick
+        hold_action_count = self.env._consecutive_hold_tick
+        sell_action_count = self.env._consecutive_sell_tick
+
+        buy_reward_strength = 1
+        # use same method ad sell reward just for buy
+        buy_reward = 0
+
+        is_peak = self._is_peak()
+        is_valley = self._is_valley()
+
+        direction_growth = self._direction_grade()
+
+        if is_previous_action_buy:
+            buy_reward -= 2 * buy_action_count
 
 
-        step_reward = 0
+        else:
+            buy_reward += math.log(buy_action_count)
 
-        step_reward -= buy_count
+        if is_peak and direction_growth > 0:
+            buy_reward -= 2 * abs(direction_growth)
 
-        current_price = self.env._current_candle[7]
-        lookback_tick = self.env._tick - self.env._look_back_window
+        elif is_valley and direction_growth > 0:
+            buy_reward += 10 * abs(direction_growth)
 
+        elif is_peak and direction_growth < 0:
+            buy_reward -= 4 * abs(direction_growth)
 
-        temp_max_price = current_price
-        temp_min_price = current_price
-
-        for tick in range(lookback_tick, self.env._tick + self.env._look_ahead_window):
-            
-            if tick >= len(self.env._data) - 1:
-                continue
-
-            price = self.env._get_state(tick)['original_close']
-
-            if price > current_price:
-                # good
-                if price > temp_max_price:
-                    temp_max_price = price
-
-            if price < current_price:
-                # bad, means this buy is sub-optimal
-                if price < temp_min_price:
-                    temp_min_price = price
-
-            del price
-            
-
-        if current_price > temp_min_price:
-            rr = ((temp_min_price - current_price) / current_price) * 100
-            step_reward += rr
+        elif is_valley and direction_growth < 0:
+            buy_reward += 5 * abs(direction_growth)
 
 
-        if current_price < temp_max_price:
-            rr = ((temp_max_price - current_price) / current_price) * 100
-            step_reward += rr
-            
-        del temp_max_price
-        del temp_min_price
-        del current_price
 
-        return step_reward * 100
+        return buy_reward * buy_reward_strength
 
     def sell_reward(self):
-        sell_count = self.env._consecutive_sell_tick
+        sell_reward_strength = 1
+        sell_reward = 0
+
+        is_previous_action_buy = self.env._previous_action_buy
+
+        buy_action_count = self.env._consecutive_buy_tick
+        hold_action_count = self.env._consecutive_hold_tick
+        sell_action_count = self.env._consecutive_sell_tick
+
+        is_peak = self._is_peak()
+        is_valley = self._is_valley()
+
+        if not is_previous_action_buy:
+            sell_reward -= 2 * sell_action_count
+
+        direction_growth = self._direction_grade()
 
 
-        step_reward = 0
 
-        step_reward -= sell_count
-
-        current_price = self.env._current_candle[7]
-
-        lookback_tick = self.env._tick - self.env._look_back_window
-
-        temp_max_price = current_price
-        temp_min_price = current_price
-
-        for tick in range(lookback_tick, self.env._tick + self.env._look_ahead_window):
-            if tick >= len(self.env._data) - 1:
-                continue
-            price = self.env._get_state(tick)[7]
-
-            if price > current_price:
-                # good
-                if price > temp_max_price:
-                    temp_max_price = price
-
-            if price < current_price:
-                # bad, means this buy is sub-optimal
-                if price < temp_min_price:
-                    temp_min_price = price
-
-            del price
+        if is_peak and direction_growth > 0:
+            sell_reward += 5 * abs(direction_growth)
 
 
-        if current_price < temp_max_price:
-            # punishment for selling too low
-            step_reward += ((current_price - temp_max_price) / temp_max_price) * 100
+        elif is_valley and direction_growth < 0:
+            sell_reward -= 2 * abs(direction_growth)
 
-        if current_price > temp_min_price:
-            # reward for selling above lowest point
-            step_reward += ((current_price - temp_min_price) / temp_min_price) * 100
+        elif is_peak and direction_growth < 0:
+            sell_reward += 10 * abs(direction_growth)
+
+        elif is_valley and direction_growth > 0:
+            sell_reward -= 4 * abs(direction_growth)
 
 
-        del temp_max_price
-        del temp_min_price
-
-        # else:
-        #     step_reward += ((last_buy_price - current_price) / current_price) * 100
-
-        del current_price
-
-        # print("Sell step reward: ", step_reward * 100)
-
-        return step_reward * 100
+        return sell_reward * sell_reward_strength
 
     def hold_reward(self):
         # check for uptrend only if we have a previous buy
         direction_growth = self._direction_grade()
 
-        is_up = self._is_uptrend()
-        is_down = self._is_downtrend()
+        step_reward = 0
+
         is_peak = self._is_peak()
         is_valley = self._is_valley()
 
-        reward = 0
 
-        if is_up:
-            reward += 2 * abs(direction_growth)
+        if direction_growth > 0.4:
+            step_reward += 2 * abs(direction_growth)
 
-        elif is_down:
-            reward += 2 * abs(direction_growth)
+        elif direction_growth < -0.4:
+            step_reward += 2 * abs(direction_growth)
 
         if is_peak or is_valley:
-            reward -= 1 * abs(direction_growth)
+            step_reward -= 12 * abs(direction_growth)
 
-        if reward == 0:
-            reward = abs(direction_growth)
+        step_reward -= 10 * abs(direction_growth)
 
         
-        return reward
+        return step_reward
 
     
 

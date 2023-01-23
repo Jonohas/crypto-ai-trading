@@ -7,3 +7,5 @@ Models/
 .env
 
 **/__pycache__/
+
+.obsidian/

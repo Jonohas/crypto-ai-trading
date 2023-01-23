@@ -1,28 +1,13 @@
-<style>
-div {
-    margin-bottom: 20px;
-}
-.tag {
-    padding: 5px;
-    border-radius: 5px;
-    color: white;
-    font-size: 12px;
-}
-.red {
-    background-color: #ff3300;
-}
-.blue {
-    background-color: #0099ff;
-}
-</style>
+
 
 ## Possible indicators
+
+https:/investopedia.com/
 ### RSI (Relative Strength Index)
 <div>
     <span class="tag red">Momentum oscillator</span>
     <span class="tag blue">Combine</span>
 </div>
-
 
 RSI measures the speed and magnitude of a price change to evaluate overvalued or undervalued conditions in the price of that asset. The RSI is displayed as an oscillator (a line graph that moves between two extremes) and can have a reading from 0 to 100. 
 The RSI is considered:
@@ -40,15 +25,14 @@ As a momentum indicator, the relative strength index compares an assets strength
 
 #### Calculating the RSI
 RSI uses a two-part calculation that starts with the following formula:
-```math
-RSI_{step one} = 100 - \ {\frac{100}{ 1 + \frac{average gain}{average loss}}}
-```
+
+$$RSI_{step one} = 100 - \ {\frac{100}{ 1 + \frac{average gain}{average loss}}}$$
+
 
 The average gain and loss in this calculation is tha average percentage gain or loss during a look-back period. The formula uses a positive value for the average loss. Periods with price increases are counted as zero in the calculations of average loss.
 The standard number of periods to calculate the initial RSI value is 14. For example, imagine the market closed higher sever out of the past 14 days with an average gain of 1%. The remaining seven days all closed lower with an average loss of -0.8%. The RSI would be calculated as follows:
-```math
 
-```
+
 
 #### Risks
 Fully relying on RSI would not be good since it doesn'ta take econimic news, earnings and fundamental data into account. It is a good idea to combine it with other indicators. Additionally, RSI can remain overbought or oversold for long periods of time. Usually paired with volume and the overall trend of the asset.
@@ -67,17 +51,12 @@ Fully relying on RSI would not be good since it doesn'ta take econimic news, ear
 The A/D indicator is a volume-measurement tool that assesses the cumulative inflow and outflow of money of a given asset. It measures price and colume of tha asset for ascertain wether iti is being accumulated or distributed. It provides insight on the strength of the current trend and can be used to identify potential reversals. If the A/D line is rising, it indicates that the asset is being accumulated. If the A/D line is falling, it indicates that the asset is being distributed. Having a rising asset but a falling A/D line indicates that the asset is being distributed at a faster rate than it is being accumulated. This can be a sign of a potential reversal. It looks at the relation between the value and the volume of the asset. Accumulations refers to the buying level fot that security given a specific period.
 Distributuions refers to the selling level for that security given a specific period.
 
-```math
-Money Flow Multiplier = \frac{(Close - Low) - (High - Close)}{High - Low}
-```
 
-```math
-Money Flow Volume = Money Flow Multiplier \times Volume
-```
+$$Money Flow Multiplier = \frac{(Close - Low) - (High - Close)}{High - Low}$$
 
-```math
-Accumulation/Distribution = \sum_{i=1}^{n} Money Flow Volume
-```
+$$Money Flow Volume = Money Flow Multiplier \times Volume$$
+
+$$Accumulation/Distribution = \sum_{i=1}^{n} Money Flow Volume$$
 
 ### Average True Range
 
@@ -88,14 +67,9 @@ Rising ATR means the volatility is increasing. Whilst the falling ATR means the 
 This is a subjective measure, meaning that it is open to interpretation. There is no single ATR value that will tell you with any certainty that a trend is about to reverse or not. Instead, ATR eadings should always be compared against earlier readings to get a feel of a trend’s strength or weakness.
 
 #### Formula
-```math
-TR = max[(High - Low), Abs(High - Close_{previous}), Abs(Low - Close_{previous})]
-```
+$$TR = max[(High - Low), Abs(High - Close_{previous}), Abs(Low - Close_{previous})]$$
 
-```math
-ATR = (\frac{1}{n}) \sum_{i=1}^{n} TR_{i}
-```
-
+$$ATR = (\frac{1}{n}) \sum_{i=1}^{n} TR_{i}$$
 
 ### Bollinger Bands
 
@@ -105,17 +79,11 @@ It is used as an indicator to measure volatility and can also be used to measure
 Roughly 90% of the asset price actions occur between the two bands. Any breakout above or below the bands can be considered a major event. The breakout is not a trading signal. Breakouts provice no clue as to the direction and extend of future price movement.
 
 #### Formula
-```math
-Typical Price = \frac{High + Low + Close}{3}
-```
+$$Typical Price = \frac{High + Low + Close}{3}$$
 
-```math
-Upper BollingerBand = Moving Average(Typical Price, periods) + m * Standard Deviation(Typical Price, periods)
-```
+$$Upper BollingerBand = Moving Average(Typical Price, periods) + m * Standard Deviation(Typical Price, periods)$$
 
-```math
-Lower BollingerBand = Moving Average(Typical Price, periods) - m * Standard Deviation(Typical Price, periods)
-```
+$$Lower BollingerBand = Moving Average(Typical Price, periods) - m * Standard Deviation(Typical Price, periods)$$
 
 
 ### Moving Average Convergence Divergence (MACD)
@@ -129,9 +97,7 @@ An exponential moving average (EMA) is a type of moving average (MA) that places
 MACD is a lagging indicator. After all, all the data used in MACD is based on the historical price action of the stock. Since it is based on historical data, it must necessarily "lag" in price. However, some traders use MACD histograms to predict when a change in trend will occur. For these traders, this aspect of the MACD might be viewed as a leading indicator for future trend changes.
 
 #### Formula
-```math
-MACD = EMA_{12} - EMA_{26}
-```
+$$MACD = EMA_{12} - EMA_{26}$$
 
 
 
@@ -145,18 +111,10 @@ An MSI reading abond 80 is considered overbought and and MFI reading below 20 is
 A divergence between the indicator and price is noteworthy. For example, if the indicator is rising while the price is falling or flat. The price could start rising.
 
 #### Formula
-```math
-Money Flow Index = 100 - \frac{100}{1 + Money Flow Ratio}
-```
-```math
-Money Flow Ratio = \frac{14 Period Positive Money Flow}{14 Period Negative Money Flow}
-```
-```math
-Raw Money Flow = Typical Price \times Volume
-```
-```math
-Typical Price = \frac{High + Low + Close}{3}
-```
+$$Money Flow Index = 100 - \frac{100}{1 + Money Flow Ratio}$$
+$$Money Flow Ratio = \frac{14 Period Positive Money Flow}{14 Period Negative Money Flow}$$
+$$Raw Money Flow = Typical Price \times Volume$$
+$$Typical Price = \frac{High + Low + Close}{3}$$
 
 ### Parabolic SAR indicator
 
@@ -170,12 +128,9 @@ The PSAR indicator appears on a chart as a series of dots, either above or below
 - A reversal occurs when these dots flip, but a reversal signal in the SAR does not necessarily mean a reversal in the price. A PSAR only means that the price and indicator have crossed.
 
 #### Formula
-```math
-RisingPSAR = PSAR_{previous} + AF
-```
-```math
-FallingPSAR = PSAR_{previous} - AF
-```
+$$RisingPSAR = PSAR_{previous} + AF$$
+$$FallingPSAR = PSAR_{previous} - AF$$
+
 ##### Where 
 - AF = Acceleration Factor (starts with 0.02 and increases by 0.02 each time the SAR changes direction, up to a maximum of 0.2)
 - EP = Extreme Point (the highest high for a long position, or the lowest low for a short position)
@@ -189,11 +144,72 @@ The TEMA was designed to smooth price fluctuations, thereby making it easier to 
 The TEMA is used like other MAs. It can help identify trend direction, signal potential short-term trend changes or pullbacks, and provice support or resistance. The TEMA can be compared to the double exponential moving average (DEMA).
 
 #### Formula
-```math
-TEMA = (3 * EMA_{1}) - (3 * EMA_{2}) + EMA_{3}
-```
+$$TEMA = (3 * EMA_{1}) - (3 * EMA_{2}) + EMA_{3}$$
+
 ##### Where
 - EMA_{1} = Exponential Moving Average of the price
 - EMA_{2} = Exponential Moving Average of EMA_{1}
 - EMAS_{3} = Exponential Moving Average of EMA_{2}
 
+
+
+## Progress
+
+### First couple of models
+The model seemed to overfit a lot.
+In the following case the model always chose the 'Sell' class. The reward didn't seem to improve a lot.
+![[Results/2023-01-17_16:45:10/images/prediction_100.png]]
+
+Now playing with some settings and values. Now the model started doing some other things but still no 'Hold' class.
+
+Cyan = buy
+Magenta = Sell
+Black = Hold
+
+The reward did also not improve.
+![[Results/2023-01-17_17:04:22/images/prediction_300.png]]
+
+![[Results/2023-01-17_21:03:00/images/prediction_120.png]]
+
+![[Results/2023-01-17_22:11:07/images/prediction_160.png]]
+
+Here is where the model gets interesting. After 400 episodes the model still wasn't overfitting and it started to choose all 3 classes (still not where they should be).
+![[prediction_420.png]]
+
+Because the model was not choosing the correct classes after 400 episodes, I rewrote some code for the environment and the algorithm as there are very important factors in any reinforcement learning strategy. The model was overfitting to one single value again.
+![[Results/2023-01-18_13:46:57/images/prediction_200.png]]
+
+Decreasing the learning rate and tweaking gave me some major improvements, the model did not overfit as much and we started seeing some more times the model chose other classes other than one. Although the model still seemed a bit confused the actual this was already a major improvement.
+![[Results/2023-01-20_14:54:38/images/prediction_300.png]]
+
+Now that I know what factors make the model learn more and less, I can start perfecting the environment so that the model learning the exact places to buy, hold and sell.
+
+
+## Why am I using Reinforcement Learning?
+
+https://www.sciencedirect.com/science/article/abs/pii/S0098135420300557
+
+Section 2.6.2: https://github.com/Joren-vanGoethem/howest-thesis/blob/main/vanGoethem_Joren_BP_final.pdf
+### Sequence of decisions
+Using standard supervised learning techniques limit the AI in the sense that it will not be able to make multiple decisions that impact eachoter. For example, in order for my model to be able to make profits, the model is has to sell. But without buying any crypto stock, you can't make a profit. So making profits is based on a sequence of actions or decisions. 
+
+### Existing models
+In some cases you might opt for existing models, in object detection or NLP there are multiple solutions out there. Not having these premade for Crypto currency trading forces me to build my own.
+
+### Outperforming existing methods
+Using Reinforment Learning makes it possible to outperform any existing methods as it can learn more from the environment itself, as opposed to only the methods applied during training in supervised learning.
+This is especially usefull since I only have limited knowledge of trading crypto currencies and don't have 20 years of experience.
+
+## Why am I using a CNN-LSTM model?
+https://link.springer.com/content/pdf/10.1007/11550907.pdf?pdf=button
+https://www.sciencedirect.com/science/article/abs/pii/S0957417420303055
+### Previous models RNN architectures
+In the past there have been numerous RNN architectures that had some error when it comes to data in the past. LSTM solves this issue with backpropagation where the model can determine of data should be memorized or forgotten.
+This makes LSTM a great solution to time series data, since experiences in the past very often have a large impact on the prediction or outcome.
+
+A LSTM model is also capable of using an entire sequence of data as input instead of only the one sample. Which is an ideal for processing and prediction data.
+
+![[LSTM_structure.png]]
+
+### What is CNN-LSTM
+Traditional LSTM models only use LSTM neurons and layers. Combining these LSTM layers with some "normal" CNN layers makes the model able to utilize both long-range and local contextual information to determine which action the model should take.

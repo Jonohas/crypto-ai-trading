@@ -163,7 +163,7 @@ class Train():
                     action = ActionSpace(np.argmax(q_values))
 
 
-                next_state, reward, done, info = self._env.step(action.value)
+                next_state, reward, done, info = self._env.step(action.value, is_random_action)
 
                 
 
@@ -205,6 +205,7 @@ class Train():
                 next_state_q_values = self._agent.predict_target(mini_batch_next_states, batch_size=self.batch_size)
 
                 max_q_next_state = np.max(next_state_q_values, axis=1)
+
                 for i in range(self.batch_size):
                     if mini_batch_done[i]:
                         y[i, mini_batch_actions[i]] = mini_batch_rewards[i]
@@ -214,7 +215,6 @@ class Train():
                 self._agent.fit_q(mini_batch_states, y, batch_size=self.batch_size)
 
             else:
-                self._env.render()
                 continue
             if update_counter == self.update_target_interval:
                 self._agent.update_target()
@@ -222,6 +222,8 @@ class Train():
             update_counter += 1
             
             reward_history.append(episode_reward)
+            self._env.render(episode)
+            
 
 
             if episode % self.save_model_interval == 0:

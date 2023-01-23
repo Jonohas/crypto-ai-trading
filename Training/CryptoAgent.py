@@ -20,6 +20,8 @@ class CryptoAgent:
         self.populated = False
         self.log_dir = log_dir
 
+        self.root = root
+
         self._input_shape = input_shape
 
         self._verbose = verbose
@@ -28,6 +30,7 @@ class CryptoAgent:
 
         self._model_q = CryptoModel(self._input_shape, root, self.log_dir, {'learning_rate': model_arguments['learning_rate'], 'use_previous_model': False})
         self._model_target = CryptoModel(self._input_shape, root, self.log_dir, model_arguments)
+        self.update_target()
 
     def sample_memory(self, batch_size):
         if batch_size > len(self.memory):

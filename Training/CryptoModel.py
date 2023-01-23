@@ -7,6 +7,8 @@ from tensorflow.keras.optimizers import Adam
 import tensorflow as tf
 import gc
 
+import numpy as np
+
 class CryptoModel:
     def __init__(self, input_shape, root ,log_dir, model_arguments):
         self._verbose = False
