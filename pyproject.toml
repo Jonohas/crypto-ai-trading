@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "crypto-ai-trading"
+version = "0.1.0"
+description = ""
+authors = ["Jonohas"]
+readme = "README.md"
+packages = [{include = "crypto_ai_trading"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+tensorflow = "2.11"
+
+[tool.poetry.group.dev.dependencies]
+tensorflow = "2.11"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
