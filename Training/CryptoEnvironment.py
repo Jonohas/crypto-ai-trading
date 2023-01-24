@@ -235,8 +235,9 @@ class CryptoEnvironment(gym.Env):
         if self._coin_amount * self._current_candle[7] + self._account_balance < 0:
             done = True
         
-
-        
+        if self._tick == self._tick + self._step_limit:
+            done = True
+            
         try:
             next_state = self._get_state(self._tick + 1)
 

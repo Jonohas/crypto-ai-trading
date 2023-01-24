@@ -102,7 +102,7 @@ class Train():
         log_dir = os.getenv("SAVE_PATH")
 
         timestamp = time.time()
-        string_time = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime(timestamp))
+        string_time = time.strftime("%Y-%m-%d_%H%M%S", time.localtime(timestamp))
         log_dir = os.path.join(log_dir, str(string_time))
             
 
