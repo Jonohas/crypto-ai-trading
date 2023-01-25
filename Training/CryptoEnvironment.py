@@ -7,29 +7,33 @@ from ActionSpace import ActionSpace
 from ActionSpace import Positions
 from Algorithms.CrypoAlgorithm import Algorithm
 
+
+import matplotlib
+matplotlib.use('qt5agg')
+
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+
 
 import pandas as pd
 
 class CryptoEnvironment(gym.Env):
-    metadata = {'render.modes': ['human']}
 
-    def __init__(self, data, training_data, arguments, input_shape, log_dir, verbose=False):
+    def __init__(self, data, training_data, arguments, input_shape, log_dir, verbose=False, render=False):
         super(CryptoEnvironment, self).__init__()
 
-        
+        self._render = render
+        if render:
+            plt.show(block=False)
 
-        plt.ion()
+            self.fig = plt.figure(figsize=(20, 10))
+            self.grid = plt.GridSpec(3, 2)
+            self.fig.tight_layout(pad=3)
 
-        self.fig = plt.figure(figsize=(20, 10))
-        self.grid = plt.GridSpec(3, 2)
-        self.fig.tight_layout(pad=3)
+            self._ax1 = self.fig.add_subplot(self.grid[0:2, :2])
+            # self._ax1_twin = self._ax1.twinx()
 
-        self._ax1 = self.fig.add_subplot(self.grid[0:2, :2])
-        # self._ax1_twin = self._ax1.twinx()
-
-        self._ax2 = self.fig.add_subplot(self.grid[2:3, :2])
+            self._ax2 = self.fig.add_subplot(self.grid[2:3, :2])
 
         self._algorithm = Algorithm(self)
 
@@ -49,24 +53,22 @@ class CryptoEnvironment(gym.Env):
         self._look_back_window = self._default_arguments["look_back_window"]
         self._look_ahead_window = self._default_arguments["look_ahead_window"]
 
-        
-
         self._step_limit = self._default_arguments['step_limit']
         self._tick = self._get_random_tick()
         self._start_tick = self._tick
         
         self._x_values = [i for i in range(self._step_limit)]
 
-
-
         self._action_space = spaces.Discrete(len(ActionSpace))
         self._observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=self._input_shape, dtype=np.double)
 
-        self._current_candle = self._get_state(self._tick)
+        
 
         self._account_balance = self._default_arguments["initial_balance"]
         self._coin_amount = self._default_arguments["initial_coin_amount"]
         self._position = Positions.CLOSED
+
+        self._current_candle = self._get_state(self._tick)
 
         self._consecutive_buy_tick = 0
         self._consecutive_sell_tick = 0
@@ -85,6 +87,8 @@ class CryptoEnvironment(gym.Env):
         self._profitable_sell_reward = self._default_arguments["profitable_sell_reward"]
         self._none_profitable_sell_reward = -self._profitable_sell_reward
 
+        self._open_orders = []
+
         self._action_list = {
             "buy": [],
             "hold": [],
@@ -99,13 +103,19 @@ class CryptoEnvironment(gym.Env):
         return random.choice(list(ActionSpace))
 
     def _get_state(self, tick):
-        return self._data.iloc[tick]
+        state = self._data.iloc[tick].copy()
+        state['balance'] = self._account_balance
+        state['coin_amount'] = self._coin_amount
+        return state
 
     def _get_sequence_env(self, tick):
         return self._data.iloc[tick - self._sequence_length:tick]
 
     def _get_sequence(self, tick):
-        return self._training_data.iloc[tick - self._sequence_length:tick]
+        sequence = self._training_data.iloc[tick - self._sequence_length:tick].copy()
+        sequence['balance'] = self._account_balance
+        sequence['coin_amount'] = self._coin_amount
+        return sequence
 
     def reset(self):
         self._action_list = {
@@ -130,6 +140,8 @@ class CryptoEnvironment(gym.Env):
         self._total_profit = 0
         self._previous_buy_tick = 0
         self._previous_sell_tick = 0
+
+        self._open_orders = []
 
         return self._current_candle
     
@@ -171,6 +183,7 @@ class CryptoEnvironment(gym.Env):
             b, = self._ax1.plot(buys_not_random['tick'], buys_not_random['original_close'], 's', color='cyan', label="Buy")
             br, = self._ax1.plot(buys_random['tick'], buys_random['original_close'], '^', color='cyan', label="Buy Random")
             breward = self._ax2.bar(buys['tick'], buys['reward'], bottom=None, align='center', color='cyan', label="Reward")
+            plt.pause(0.0001)
             handles.append(b)
             handles.append(br)
 
@@ -178,6 +191,7 @@ class CryptoEnvironment(gym.Env):
             h, = self._ax1.plot(holds_not_random['tick'], holds_not_random['original_close'], 's', color='black', label="Hold")
             hr, = self._ax1.plot(holds_random['tick'], holds_random['original_close'], '^', color='black', label="Hold Random")
             hreward = self._ax2.bar(holds['tick'], holds['reward'], bottom=None, align='center', color='black', label="Reward")
+            plt.pause(0.0001)
             handles.append(h)
             handles.append(hr)
 
@@ -185,6 +199,7 @@ class CryptoEnvironment(gym.Env):
             s, = self._ax1.plot(sells_not_random['tick'], sells_not_random['original_close'], 's', color='magenta', label="Sell")
             sr, = self._ax1.plot(sells_random['tick'], sells_random['original_close'], '^', color='magenta', label="Sell Random")
             sreward = self._ax2.bar(sells['tick'], sells['reward'], bottom=None, align='center', color='magenta', label="Reward")
+            plt.pause(0.0001)
             handles.append(s)
             handles.append(sr)
 
@@ -196,6 +211,8 @@ class CryptoEnvironment(gym.Env):
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
 
+        plt.show(block=False)
+
     def step(self, action, random):
         reward = 0
 
@@ -203,7 +220,7 @@ class CryptoEnvironment(gym.Env):
 
         temp_state = self._get_state(self._tick).copy()
         temp_state['tick'] = int(self._tick - self._offset)
-        temp_state['random'] = random
+        temp_state['random'] = bool(random)
 
 
         if action == ActionSpace.BUY.value:
@@ -232,12 +249,12 @@ class CryptoEnvironment(gym.Env):
             "profit": self._total_profit,
         }
 
-        if self._coin_amount * self._current_candle[7] + self._account_balance < 0:
+        if self._coin_amount * self._current_candle['original_close'] + self._account_balance < 20:
             done = True
         
-        if self._tick == self._tick + self._step_limit:
+        if self._tick == self._start_tick + self._step_limit:
             done = True
-            
+
         try:
             next_state = self._get_state(self._tick + 1)
 
@@ -256,44 +273,68 @@ class CryptoEnvironment(gym.Env):
         self._consecutive_sell_tick = 0
         self._consecutive_hold_tick = 0
 
-        self._account_balance -= ((self._account_balance * self._risk) / self._current_candle[7]) * self._current_candle[7]
-        self._coin_amount += (self._account_balance * self._risk) / self._current_candle[7]
+        self._account_balance -= ((self._account_balance * self._risk) / self._current_candle['original_close']) * self._current_candle['original_close']
+        self._coin_amount += (self._account_balance * self._risk) / self._current_candle['original_close']
+
+        self._open_orders.append({
+            'tick': self._tick,
+            'original_close': self._current_candle['original_close'],
+            'amount': (self._account_balance * self._risk) / self._current_candle['original_close']
+        })
 
         self._consecutive_buy_tick += 1
-        return self._algorithm.buy_reward()
+        return 0
             
     def _sell(self):
+
+        # clear self._open_orders
         self._consecutive_buy_tick = 0
         self._consecutive_hold_tick = 0
 
+        open_order_cost = 0
+
+        for order in self._open_orders:
+            open_order_cost += order['original_close'] * order['amount']
+
+        coin_to_sell = self._coin_amount * self._current_candle['original_close']
+
+        profit = coin_to_sell - open_order_cost
+
+        self._total_profit += profit
+        self._open_orders = []
+        
+
         prev_account_balance = self._account_balance
 
-        self._account_balance += self._coin_amount * self._current_candle[7]
-        # calculate profit
-        self._profit = prev_account_balance - self._account_balance
+        self._account_balance += coin_to_sell
+
         self._coin_amount = 0
 
         self._consecutive_sell_tick += 1
 
-        return self._algorithm.sell_reward()
+        return profit
 
     def _hold(self):
         self._consecutive_buy_tick = 0
         self._consecutive_sell_tick = 0
         self._consecutive_hold_tick += 1
-        return self._algorithm.hold_reward()
+        return 0
 
     def render(self, episode):
-        try:
-            self._plot_data(self._start_tick, self._start_tick + self._step_limit, episode)
-        except Exception as e:
-            print("\n")
-            print("=====================================")
-            print("\n")
-            print(e)
-            print("\n")
-            print("=====================================")
-            print("\n")
+        if self._render:
+            try:
+                self._plot_data(self._start_tick, self._start_tick + self._step_limit, episode)
+            except Exception as e:
+                print("\n")
+                print("=====================================")
+                print("\n")
+                print(e)
+                print("\n")
+                print("=====================================")
+                print("\n")
+
+
+        
 
     def close(self):
         pass

@@ -52,8 +52,8 @@ class Train():
 
         self._verbose = bool(os.getenv("VERBOSE"))
 
-        self.input_shape = (self.env_sequence_length, self._data.shape[1])
-        self.training_input_shape = (self.env_sequence_length, self._training_data.shape[1])
+        self.input_shape = (self.env_sequence_length, self._data.shape[1] + 2)
+        self.training_input_shape = (self.env_sequence_length, self._training_data.shape[1] + 2)
 
         self._use_previous_model = bool(os.getenv("USE_PREVIOUS_MODEL"))
         self._previous_model_path = os.getenv("LOAD_MODEL_PATH")
@@ -81,7 +81,7 @@ class Train():
             'consecutive_threshold': self.env_consecutive_threshold,
         }
 
-        self._env = CryptoEnvironment(self._data, self._training_data, arguments, self.input_shape, self.log_dir, verbose=self._verbose)
+        self._env = CryptoEnvironment(self._data, self._training_data, arguments, self.input_shape, self.log_dir, verbose=self._verbose, render=True)
         self._agent = CryptoAgent(self.replay_buffer_capacity, self.training_input_shape ,self.root_dir,  self.log_dir, model_arguments, verbose=self._verbose)
 
         self.write_to_log(self.log_dir + "/reward_history.csv", ['episode', 'reward', 'average_reward', 'epsilon', 'step_count', 'profit'])

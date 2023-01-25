@@ -107,11 +107,8 @@ class Algorithm:
 
     def buy_reward(self):
 
-        is_previous_action_buy = self.env._previous_action_buy
 
         buy_action_count = self.env._consecutive_buy_tick
-        hold_action_count = self.env._consecutive_hold_tick
-        sell_action_count = self.env._consecutive_sell_tick
 
         buy_reward_strength = 1
         # use same method ad sell reward just for buy
@@ -122,12 +119,6 @@ class Algorithm:
 
         direction_growth = self._direction_grade()
 
-        if is_previous_action_buy:
-            buy_reward -= 2 * buy_action_count
-
-
-        else:
-            buy_reward += math.log(buy_action_count)
 
         if is_peak and direction_growth > 0:
             buy_reward -= 2 * abs(direction_growth)
@@ -143,23 +134,16 @@ class Algorithm:
 
 
 
-        return buy_reward * buy_reward_strength
+        # return buy_reward * buy_reward_strength
+    
+        return 0
 
     def sell_reward(self):
         sell_reward_strength = 1
         sell_reward = 0
 
-        is_previous_action_buy = self.env._previous_action_buy
-
-        buy_action_count = self.env._consecutive_buy_tick
-        hold_action_count = self.env._consecutive_hold_tick
-        sell_action_count = self.env._consecutive_sell_tick
-
         is_peak = self._is_peak()
         is_valley = self._is_valley()
-
-        if not is_previous_action_buy:
-            sell_reward -= 2 * sell_action_count
 
         direction_growth = self._direction_grade()
 
@@ -203,7 +187,9 @@ class Algorithm:
         step_reward -= 10 * abs(direction_growth)
 
         
-        return step_reward
+        # return step_reward
+    
+        return 0
 
     
 
