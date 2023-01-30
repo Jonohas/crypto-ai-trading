@@ -5,6 +5,7 @@ logs/
 Results/
 Models/
 .env
+Training/logs/
 
 **/__pycache__/
 

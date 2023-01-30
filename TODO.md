@@ -1,3 +1,4 @@
 - [X] Make model aware of the environment (add environment as a feature)
 - [X] Use simpler algorithm
 - [ ] Initialize inital balance and coin amount randomly
+- [ ] 

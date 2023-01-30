@@ -97,89 +97,129 @@ void calculate_indicators(struct indicator_selection *selection, struct candle *
     }
 
     // free(candles);
+    if (selection->adosc) {
+        // copy code from msi
+        double *tmp_adosc = malloc(sizeof(double) * CSV_LENGTH);
 
-    double *tmp_adosc = malloc(sizeof(double) * CSV_LENGTH);
-    double *tmp_atr = malloc(sizeof(double) * CSV_LENGTH);
+        int beginIdx_adosc, endIdx_adosc;
 
-    double *tmp_bb_upper = malloc(sizeof(double) * CSV_LENGTH);
-    double *tmp_bb_middle = malloc(sizeof(double) * CSV_LENGTH);
-    double *tmp_bb_lower = malloc(sizeof(double) * CSV_LENGTH);
+        TA_ADOSC(0, CSV_LENGTH - 1, temp_high, temp_low, temp_close, temp_volume, 3, 10, &beginIdx_adosc, &endIdx_adosc, tmp_adosc);
 
-    double *tmp_macd = malloc(sizeof(double) * CSV_LENGTH);
-    double *tmp_macd_signal = malloc(sizeof(double) * CSV_LENGTH);
-    double *tmp_macd_hist = malloc(sizeof(double) * CSV_LENGTH);
-
-    double *tmp_mfi = malloc(sizeof(double) * CSV_LENGTH);
-    double *tmp_rsi = malloc(sizeof(double) * CSV_LENGTH);
-    double *tmp_sar = malloc(sizeof(double) * CSV_LENGTH);
-    double *tmp_tema = malloc(sizeof(double) * CSV_LENGTH);
-
-
-    int beginIdx, endIdx;
-
-    if (selection->adosc)
-        TA_ADOSC(0, CSV_LENGTH - 1, temp_high, temp_low, temp_close, temp_volume, 3, 10, &beginIdx, &endIdx, tmp_adosc);
-
-    if (selection->atr)
-        TA_ATR(0, CSV_LENGTH - 1, temp_high, temp_low, temp_close, 14, &beginIdx, &endIdx, tmp_atr);
-
-    if (selection->bb)
-        TA_BBANDS(0, CSV_LENGTH - 1, temp_close, 20, 2, 2, TA_MAType_SMA, &beginIdx, &endIdx, tmp_bb_upper, tmp_bb_middle, tmp_bb_lower);
-
-    if (selection->macd)
-        TA_MACD(0, CSV_LENGTH - 1, temp_close, 12, 26, 9, &beginIdx, &endIdx, tmp_macd, tmp_macd_signal, tmp_macd_hist);
-
-    if (selection->mfi)
-        TA_MFI(0, CSV_LENGTH - 1, temp_high, temp_low, temp_close, temp_volume, 14, &beginIdx, &endIdx, tmp_mfi);
-    
-    if (selection->rsi)
-        TA_RSI(0, CSV_LENGTH - 1, temp_close, 14, &beginIdx, &endIdx, tmp_rsi);
-
-    if (selection->sar)
-        TA_SAR(0, CSV_LENGTH - 1, temp_high, temp_low, 0.02, 0.2, &beginIdx, &endIdx, tmp_sar);
-
-    if (selection->tema)
-        TA_TEMA(0, CSV_LENGTH - 1, temp_close, 30, &beginIdx, &endIdx, tmp_tema);
-
-
-
-    // Assign the calculated values to the candles
-    for (int i = 0; i < CSV_LENGTH; i++)
-    {
-        struct candle *candle = &candles[i];
-
-        if (selection->adosc)
-            candle->adosc = tmp_adosc[i];
-
-        if (selection->atr)
-            candle->atr = tmp_atr[i];
-
-        if (selection->bb)
-        {
-            candle->bb_upper = tmp_bb_upper[i];
-            candle->bb_middle = tmp_bb_middle[i];
-            candle->bb_lower = tmp_bb_lower[i];
+        for (int i = beginIdx_adosc; i < CSV_LENGTH; i++) {
+            struct candle *candle = &candles[i];
+            candle->adosc = tmp_adosc[i + beginIdx_adosc];
         }
-
-        if (selection->macd)
-        {
-            candle->macd = tmp_macd[i];
-            candle->macd_signal = tmp_macd_signal[i];
-            candle->macd_hist = tmp_macd_hist[i];
-        }
-
-        if (selection->mfi)
-            candle->mfi = tmp_mfi[i];
-        
-        if (selection->rsi)
-            candle->rsi = tmp_rsi[i];
-
-        if (selection->sar)
-            candle->sar = tmp_sar[i];
-
-        if (selection->tema)
-            candle->tema = tmp_tema[i];
     }
+
+    if (selection->atr) {
+        double *tmp_atr = malloc(sizeof(double) * CSV_LENGTH);
+
+        int beginIdx_atr, endIdx_atr;
+        TA_ATR(0, CSV_LENGTH - 1, temp_high, temp_low, temp_close, 14, &beginIdx_atr, &endIdx_atr, tmp_atr);
+        for (int i = beginIdx_atr; i < CSV_LENGTH; i++) {
+            struct candle *candle = &candles[i];
+            candle->atr = tmp_atr[i + beginIdx_atr];
+        }
+
+        free(tmp_atr);
+
+    }
+
+    if (selection->bb) {
+        double *tmp_bb_upper = malloc(sizeof(double) * CSV_LENGTH);
+        double *tmp_bb_middle = malloc(sizeof(double) * CSV_LENGTH);
+        double *tmp_bb_lower = malloc(sizeof(double) * CSV_LENGTH);
+
+        int beginIdx_bb, endIdx_bb;
+        TA_BBANDS(0, CSV_LENGTH - 1, temp_close, 20, 2, 2, TA_MAType_SMA, &beginIdx_bb, &endIdx_bb, tmp_bb_upper, tmp_bb_middle, tmp_bb_lower);
+
+        for (int i = beginIdx_bb; i < CSV_LENGTH; i++) {
+            struct candle *candle = &candles[i];
+            candle->bb_upper = tmp_bb_upper[i + beginIdx_bb];
+            candle->bb_middle = tmp_bb_middle[i + beginIdx_bb];
+            candle->bb_lower = tmp_bb_lower[i + beginIdx_bb];
+        }
+
+        free(tmp_bb_upper);
+        free(tmp_bb_middle);
+        free(tmp_bb_lower);
+    }
+
+    if (selection->macd) {
+        double *tmp_macd = malloc(sizeof(double) * CSV_LENGTH);
+        double *tmp_macd_signal = malloc(sizeof(double) * CSV_LENGTH);
+        double *tmp_macd_hist = malloc(sizeof(double) * CSV_LENGTH);
+
+        int beginIdx_macd, endIdx_macd;
+        TA_MACD(0, CSV_LENGTH - 1, temp_close, 12, 26, 9, &beginIdx_macd, &endIdx_macd, tmp_macd, tmp_macd_signal, tmp_macd_hist);
+        for (int i = beginIdx_macd; i < CSV_LENGTH; i++) {
+            struct candle *candle = &candles[i];
+            candle->macd = tmp_macd[i + beginIdx_macd];
+            candle->macd_signal = tmp_macd_signal[i + beginIdx_macd];
+            candle->macd_hist = tmp_macd_hist[i + beginIdx_macd];
+        }
+
+        free(tmp_macd);
+        free(tmp_macd_signal);
+        free(tmp_macd_hist);
+    }
+    
+
+    if (selection->mfi) {
+        double *tmp_mfi = malloc(sizeof(double) * CSV_LENGTH);
+
+        int beginIdx_mfi, endIdx_mfi;
+        TA_MFI(0, CSV_LENGTH - 1, temp_high, temp_low, temp_close, temp_volume, 14, &beginIdx_mfi, &endIdx_mfi, tmp_mfi);
+        for (int i = beginIdx_mfi; i < CSV_LENGTH; i++) {
+            struct candle *candle = &candles[i];
+            candle->mfi = tmp_mfi[i + beginIdx_mfi];
+        }
+
+        free(tmp_mfi);
+    }
+
+    if (selection->rsi) {
+        double *tmp_rsi = malloc(sizeof(double) * CSV_LENGTH);
+
+        int beginIdx_rsi, endIdx_rsi;
+        TA_RSI(0, CSV_LENGTH - 1, temp_close, 14, &beginIdx_rsi, &endIdx_rsi, tmp_rsi);
+        for (int i = beginIdx_rsi; i < CSV_LENGTH; i++) {
+            struct candle *candle = &candles[i];
+            candle->rsi = tmp_rsi[i + beginIdx_rsi];
+        }
+
+        free(tmp_rsi);
+    }
+
+        
+    if (selection->sar) {
+        double *tmp_sar = malloc(sizeof(double) * CSV_LENGTH);
+        int beginIdx_sar, endIdx_sar;
+        TA_SAR(0, CSV_LENGTH - 1, temp_high, temp_low, 0.02, 0.2, &beginIdx_sar, &endIdx_sar, tmp_sar);
+        
+
+        for (int i = beginIdx_sar; i < CSV_LENGTH; i++) {
+            struct candle *candle = &candles[i];
+            candle->sar = tmp_sar[i + beginIdx_sar];
+        }
+
+        free(tmp_sar);
+    }
+
+    if (selection->tema) {
+        double *tmp_tema = malloc(sizeof(double) * CSV_LENGTH);
+        int beginIdx_tema, endIdx_tema;
+        TA_TEMA(0, CSV_LENGTH - 1, temp_close, 30, &beginIdx_tema, &endIdx_tema, tmp_tema);
+
+        for (int i = beginIdx_tema; i < CSV_LENGTH; i++) {
+            struct candle *candle = &candles[i];
+            candle->tema = tmp_tema[i + beginIdx_tema];
+        }
+
+        free(tmp_tema);
+    }
+
+
 
     free(temp_open);
     free(temp_high);
@@ -199,7 +239,7 @@ void calculate_indicators(struct indicator_selection *selection, struct candle *
     for (size_t i = 0; i < CSV_LENGTH - 1 ; i++) {
         if (i == 0)
             fprintf(wfp, "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n", "event_time","open","close","high","low","volume","original_open","original_close","original_high","original_low","original_volume", "adosc", "atr", "bb_upper", "bb_middle", "bb_lower", "macd", "macd_signal", "macd_hist", "mfi", "rsi", "sar", "tema");
-        else if (i > 2) {
+        else if (i > 87) {
             struct candle *candle = &candles[i];
             struct candle *new_candle = &new_candles[i];
 
@@ -231,8 +271,9 @@ void calculate_indicators(struct indicator_selection *selection, struct candle *
             new_candle->macd_signal = normalize(candle_prev->macd_signal, candle->macd_signal);
             new_candle->macd_hist = normalize(candle_prev->macd_hist, candle->macd_hist);
 
-            new_candle->mfi /= 100;
-            new_candle->rsi /= 100;
+
+            new_candle->mfi = candle->mfi / 100;
+            new_candle->rsi = candle->rsi / 100;
 
             new_candle->sar = normalize(candle_prev->sar, candle->sar);
             new_candle->tema = normalize(candle_prev->tema, candle->tema);
@@ -245,11 +286,11 @@ void calculate_indicators(struct indicator_selection *selection, struct candle *
                 new_candle->high, 
                 new_candle->low, 
                 new_candle->volume, 
-                new_candle->original_open,
-                new_candle->original_close,
-                new_candle->original_high,
-                new_candle->original_low,
-                new_candle->original_volume,
+                new_candle->original_open, 
+                new_candle->original_close, 
+                new_candle->original_high, 
+                new_candle->original_low, 
+                new_candle->original_volume, 
                 new_candle->adosc,
                 new_candle->atr,
                 new_candle->bb_upper,
@@ -268,18 +309,6 @@ void calculate_indicators(struct indicator_selection *selection, struct candle *
 
     fclose(wfp);
 
-    free(tmp_adosc);
-    free(tmp_atr);
-    free(tmp_bb_upper);
-    free(tmp_bb_middle);
-    free(tmp_bb_lower);
-    free(tmp_macd);
-    free(tmp_macd_signal);
-    free(tmp_macd_hist);
-    free(tmp_mfi);
-    free(tmp_rsi);
-    free(tmp_sar);
-    free(tmp_tema);
 
 };
 

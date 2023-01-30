@@ -29,12 +29,11 @@ class CryptoModel:
 
     def _create_model(self):
         model = keras.Sequential()
-
         optimizer = Adam(learning_rate=self._model_arguments['learning_rate'])
 
-        model.add(layers.LSTM(200, input_shape=self.input_shape, return_sequences=True))
+        model.add(layers.LSTM(64, input_shape=self.input_shape, return_sequences=True))
         model.add(layers.Dropout(0.2))
-        model.add(layers.LSTM(128, return_sequences=True))
+        model.add(layers.LSTM(32, return_sequences=True))
         model.add(layers.Dropout(0.2))
         model.add(layers.LSTM(64, return_sequences=True))
         model.add(layers.Dropout(0.2))

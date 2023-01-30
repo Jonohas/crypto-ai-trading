@@ -119,16 +119,8 @@ if __name__ == "__main__":
 
 
     requester0 = Thread(target=get_candlestick_data)
-    requester1 = Thread(target=get_candlestick_data)
-    requester2 = Thread(target=get_candlestick_data)
-    requester3 = Thread(target=get_candlestick_data)
-    requester4 = Thread(target=get_candlestick_data)
 
     writer0 = Thread(target=write_data)
-    writer1 = Thread(target=write_data)
-    writer2 = Thread(target=write_data)
-    writer3 = Thread(target=write_data)
-    writer4 = Thread(target=write_data)
 
     print(f"Requesting following symbols: {symbols}")
 
@@ -156,6 +148,8 @@ if __name__ == "__main__":
             # calculate items left to fetch
             items_left = int(difference - (i * batch_size))
 
+            print(start)
+
             params = {
                 "symbol": symbol,
                 "interval": "1m",
@@ -177,26 +171,8 @@ if __name__ == "__main__":
     # coins_pbar = tqdm.tqdm(total=total_symbols, position=0)
 
     requester0.start()
-    requester1.start()
-    requester2.start()
-    requester3.start()
-    requester4.start()
-    
     writer0.start()
-    writer1.start()
-    writer2.start()
-    writer3.start()
-    writer4.start()
-
-    requester0.join()
-    requester1.join()
-    requester2.join()
-    requester3.join()
-    requester4.join()
-
-    writer0.join()
-    writer1.join()
-    writer2.join()
-    writer3.join()
-    writer4.join()
     
+    
+    requester0.join()
+    writer0.join()

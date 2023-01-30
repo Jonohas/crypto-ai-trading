@@ -42,9 +42,11 @@ class Train():
         self.discount = float(os.getenv("DISCOUNT"))
         self.epsilon = float(os.getenv("EPSILON"))
         self.epsilon_decay = float(os.getenv("EPSILON_DECAY"))
+        self.epsilon_decay_start = int(os.getenv("EPSILON_DECAY_START"))
         self.min_epsilon = float(os.getenv("MIN_EPSILON"))
         self.update_target_interval = int(os.getenv("UPDATE_TARGET_INTERVAL"))
         self.save_model_interval = int(os.getenv("SAVE_MODEL_INTERVAL"))
+        self.fee = float(os.getenv("ENVIRONMENT_FEE"))
 
         self.step_limit = int(os.getenv("STEP_LIMIT"))
 
@@ -79,6 +81,7 @@ class Train():
             'profitable_sell_reward':  self.env_profitable_sell_reward,
             'step_limit': self.step_limit,
             'consecutive_threshold': self.env_consecutive_threshold,
+            'fee': self.fee,
         }
 
         self._env = CryptoEnvironment(self._data, self._training_data, arguments, self.input_shape, self.log_dir, verbose=self._verbose, render=True)
@@ -164,7 +167,6 @@ class Train():
 
 
                 next_state, reward, done, info = self._env.step(action.value, is_random_action)
-
                 
 
                 training_state = self._env._get_sequence(self._env._tick)
@@ -182,9 +184,10 @@ class Train():
             average_reward = np.mean(reward_history)
 
             if len(self._agent.memory) > self.batch_size:
-                self.epsilon = self.epsilon_decay * self.epsilon
-                if self.epsilon < self.min_epsilon:
-                    self.epsilon = self.min_epsilon
+                if self.epsilon_decay_start <= episode:
+                    self.epsilon = self.epsilon_decay * self.epsilon
+                    if self.epsilon < self.min_epsilon:
+                        self.epsilon = self.min_epsilon
 
                 minibatch_samples = self._agent.sample_memory(self.batch_size)
 
@@ -230,6 +233,7 @@ class Train():
                 self._agent.save_model(episode)
 
             self.write_to_log(self.log_dir + "/reward_history.csv", [episode, episode_reward / step_count, average_reward, self.epsilon, step_count, self._env._total_profit])
+            
 
         self._agent.save_model('final')
 

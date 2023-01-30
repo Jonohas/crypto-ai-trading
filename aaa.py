@@ -1,13 +1,5 @@
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # or any {'0', '1', '2'}
-
-
+# importing the tensorflow package
 import tensorflow as tf
-gpus = tf.config.experimental.list_physical_devices('GPU')
-if gpus:
-  for gpu in gpus:
-    print(gpu)
-    tf.config.experimental.set_memory_growth(gpu, True)
-else:
-  print("No GPU device found")
 print(tf.__version__)
+tf.test.is_built_with_cuda()
+print(tf.test.is_gpu_available(cuda_only=False, min_cuda_compute_capability=None))
